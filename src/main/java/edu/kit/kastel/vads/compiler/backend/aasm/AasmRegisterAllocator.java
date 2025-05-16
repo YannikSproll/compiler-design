@@ -9,6 +9,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static edu.kit.kastel.vads.compiler.ir.util.NodeSupport.predecessorSkipProj;
 
 
 public class AasmRegisterAllocator implements RegisterAllocator {
@@ -40,7 +41,7 @@ public class AasmRegisterAllocator implements RegisterAllocator {
     private void analyzeLivenessRecursive(Node node, HashMap<Node, Set<Node>> liveNodes, Set<Node> liveAtSuccessor) {
         switch (node) {
             case ReturnNode r -> {
-                Set<Node> currentlyLive = Set.of(r.predecessor(ReturnNode.RESULT));
+                Set<Node> currentlyLive = Set.of(predecessorSkipProj(r, ReturnNode.RESULT));
                 liveNodes.putIfAbsent(r, currentlyLive);
             }
             case BinaryOperationNode b -> {
@@ -144,7 +145,7 @@ public class AasmRegisterAllocator implements RegisterAllocator {
         for (Node node : colors.keySet()) {
             switch (node) {
                 case ReturnNode r -> {
-                    Node resultPredecessor = r.predecessor(ReturnNode.RESULT);
+                    Node resultPredecessor = predecessorSkipProj(r, ReturnNode.RESULT);
                     Integer color = colors.get(resultPredecessor);
                     HashSet<Node> affectedNodes = invertedMap.get(color);
                     for (Node affectedNode : affectedNodes) {
