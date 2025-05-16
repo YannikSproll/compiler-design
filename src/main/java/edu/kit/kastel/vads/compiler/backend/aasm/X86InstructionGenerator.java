@@ -55,7 +55,7 @@ public class X86InstructionGenerator {
 
     public X86InstructionGenerator generateMultiplicationInstruction(Register sourceRegister, Register destinationRegister) {
         generateIndentationSpace();
-        builder.append("multq")
+        builder.append("imulq")
                 .append(" ")
                 .append(sourceRegister)
                 .append(", ")
