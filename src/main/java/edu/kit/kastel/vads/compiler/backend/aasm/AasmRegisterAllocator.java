@@ -12,15 +12,12 @@ import java.util.stream.Collectors;
 
 
 public class AasmRegisterAllocator implements RegisterAllocator {
-    private int id;
-
-    private final Map<Node, Register> registers = new HashMap<>();
 
     @Override
     public Map<Node, Register> allocateRegisters(List<Node> totallyOrderedNodes) {
-        HashMap<Node, Set<Node>> liveNodes = analyzeLivenessAbsolute(totallyOrderedNodes);
+        HashMap<Node, Set<Node>> liveNodes = analyzeLiveness(totallyOrderedNodes);
 
-        InterferenceGraph interferenceGraph = buildInterferenceGraph(totallyOrderedNodes, liveNodes);
+        InterferenceGraph interferenceGraph = InterferenceGraph.createFrom(totallyOrderedNodes, liveNodes);
 
         List<Node> simplicialEliminationOrderedNodes = getSimplicialEliminationOrderedNodes(interferenceGraph);
 
@@ -29,43 +26,47 @@ public class AasmRegisterAllocator implements RegisterAllocator {
         return mapColorsToRegisters(coloring);
     }
 
-    private InterferenceGraph buildInterferenceGraph(List<Node> totallyOrderedNodes, HashMap<Node, Set<Node>> liveNodes) {
-        InterferenceGraph interferenceGraph = new InterferenceGraph();
-        totallyOrderedNodes.forEach(interferenceGraph::addNode);
 
-        Set<Node> liveAtSuccessor = Set.of();
-        for (Node node : totallyOrderedNodes.reversed()) {
-            switch (node) {
-                case BinaryOperationNode b -> {
-                    liveAtSuccessor
-                            .stream()
-                            .filter(u -> node != u)
-                            .forEach(u -> interferenceGraph.addEdge(node, u));
-                }
-                case ConstIntNode c -> {
-                    liveAtSuccessor
-                            .stream()
-                            .filter(u -> node != u)
-                            .forEach(u -> interferenceGraph.addEdge(node, u));
-                }
-                default -> {
-                }
-            }
-            liveAtSuccessor = liveNodes.get(node);
-        }
-
-        return interferenceGraph;
-    }
-
-
-    private HashMap<Node, Set<Node>> analyzeLivenessAbsolute(List<Node> totallyOrderedNodes) {
+    private HashMap<Node, Set<Node>> analyzeLiveness(List<Node> totallyOrderedNodes) {
         HashMap<Node, Set<Node>> liveNodes = new HashMap<>();
         Set<Node> liveAtSuccessor = new HashSet<>();
         for (Node node : totallyOrderedNodes.reversed()) {
-            analyze_liveness_recursive_absolute(node, liveNodes, liveAtSuccessor);
+            analyzeLivenessRecursive(node, liveNodes, liveAtSuccessor);
             liveAtSuccessor = liveNodes.get(node);
         }
         return liveNodes;
+    }
+
+    private void analyzeLivenessRecursive(Node node, HashMap<Node, Set<Node>> liveNodes, Set<Node> liveAtSuccessor) {
+        switch (node) {
+            case ReturnNode r -> {
+                Set<Node> currentlyLive = Set.of(r.predecessor(ReturnNode.RESULT));
+                liveNodes.putIfAbsent(r, currentlyLive);
+            }
+            case BinaryOperationNode b -> {
+                Set<Node> currentlyLive = new HashSet<>();
+                currentlyLive.add(b.predecessor(BinaryOperationNode.LEFT));
+                currentlyLive.add(b.predecessor(BinaryOperationNode.RIGHT));
+                currentlyLive.addAll(liveAtSuccessor
+                        .stream()
+                        .filter(u -> u != node)
+                        .collect(Collectors.toSet()));
+                liveNodes.put(node, currentlyLive);
+            }
+            case ConstIntNode c -> {
+                Set<Node> currentlyLive = liveAtSuccessor
+                        .stream()
+                        .filter(u -> u != node)
+                        .collect(Collectors.toSet());
+
+                liveNodes.put(node, currentlyLive);
+            }
+            case Phi _ -> throw new UnsupportedOperationException("phi");
+            case Block _, ProjNode _, StartNode _ -> {
+                // do nothing, skip line break
+                return;
+            }
+        };
     }
 
     private List<Node> getSimplicialEliminationOrderedNodes(
@@ -174,99 +175,5 @@ public class AasmRegisterAllocator implements RegisterAllocator {
         }
 
         return registers;
-    }
-
-    private void analyze_liveness_recursive_absolute(Node node, HashMap<Node, Set<Node>> liveNodes, Set<Node> liveAtSuccessor) {
-        switch (node) {
-            case ReturnNode r -> {
-                Set<Node> currentlyLive = Set.of(r.predecessor(ReturnNode.RESULT));
-                liveNodes.putIfAbsent(r, currentlyLive);
-            }
-            case BinaryOperationNode b -> {
-                Set<Node> currentlyLive = new HashSet<>();
-                currentlyLive.add(b.predecessor(BinaryOperationNode.LEFT));
-                currentlyLive.add(b.predecessor(BinaryOperationNode.RIGHT));
-                currentlyLive.addAll(liveAtSuccessor
-                        .stream()
-                        .filter(u -> u != node)
-                        .collect(Collectors.toSet()));
-                liveNodes.put(node, currentlyLive);
-            }
-            case ConstIntNode c -> {
-                Set<Node> currentlyLive = liveAtSuccessor
-                        .stream()
-                        .filter(u -> u != node)
-                        .collect(Collectors.toSet());
-
-                liveNodes.put(node, currentlyLive);
-            }
-            case Phi _ -> throw new UnsupportedOperationException("phi");
-            case Block _, ProjNode _, StartNode _ -> {
-                // do nothing, skip line break
-                return;
-            }
-        };
-    }
-
-
-
-    private void scan(Node node, Set<Node> visited) {
-        for (Node predecessor : node.predecessors()) {
-            if (visited.add(predecessor)) {
-                scan(predecessor, visited);
-            }
-        }
-        if (needsRegister(node)) {
-            this.registers.put(node, new VirtualRegister(this.id++));
-        }
-    }
-
-    private static boolean needsRegister(Node node) {
-        return !(node instanceof ProjNode || node instanceof StartNode || node instanceof Block || node instanceof ReturnNode);
-    }
-
-    private void analyze_liveness_relative(IrGraph graph) {
-        Node endBlock = graph.endBlock();
-        HashMap<Node, Set<Node>> liveNodes = new HashMap<>();
-        analyze_liveness_recursive_relative(endBlock.predecessor(0), liveNodes, new HashSet<>()); // Start with return statement of block
-        int i = 5;
-    }
-
-    private void analyze_liveness_recursive_relative(Node node, HashMap<Node, Set<Node>> liveNodes, Set<Node> liveAtSuccessor) {
-        switch (node) {
-            case ReturnNode r -> {
-                Set<Node> currentlyLive = Set.of(r.predecessor(ReturnNode.RESULT));
-                liveNodes.putIfAbsent(r, currentlyLive);
-                analyze_liveness_recursive_relative(r.predecessor(ReturnNode.RESULT), liveNodes, currentlyLive);
-            }
-            case BinaryOperationNode b -> {
-                Set<Node> currentlyLive = liveNodes.getOrDefault(node, new HashSet<>());
-                Node left = b.predecessor(BinaryOperationNode.LEFT);
-                Node right = b.predecessor(BinaryOperationNode.RIGHT);
-                currentlyLive.add(left);
-                currentlyLive.add(right);
-                currentlyLive.addAll(liveAtSuccessor
-                        .stream()
-                        .filter(u -> u != node)
-                        .collect(Collectors.toSet()));
-                liveNodes.put(node, currentlyLive);
-
-                analyze_liveness_recursive_relative(left, liveNodes, currentlyLive);
-                analyze_liveness_recursive_relative(right, liveNodes, currentlyLive);
-            }
-            case ConstIntNode c -> {
-                Set<Node> currentlyLive = liveNodes.getOrDefault(node, new HashSet<>());
-                currentlyLive.addAll(liveAtSuccessor
-                        .stream()
-                        .filter(u -> u != node)
-                        .collect(Collectors.toSet()));
-                liveNodes.put(node, currentlyLive);
-            }
-            case Phi _ -> throw new UnsupportedOperationException("phi");
-            case Block _, ProjNode _, StartNode _ -> {
-                // do nothing, skip line break
-                return;
-            }
-        };
     }
 }

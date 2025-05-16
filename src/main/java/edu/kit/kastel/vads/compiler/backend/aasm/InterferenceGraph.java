@@ -1,5 +1,7 @@
 package edu.kit.kastel.vads.compiler.backend.aasm;
 
+import edu.kit.kastel.vads.compiler.ir.node.BinaryOperationNode;
+import edu.kit.kastel.vads.compiler.ir.node.ConstIntNode;
 import edu.kit.kastel.vads.compiler.ir.node.Node;
 
 import java.util.*;
@@ -76,5 +78,33 @@ public final class InterferenceGraph {
                         entry -> new HashSet<>(entry.getValue())));
 
         return new InterferenceGraph(adjacencyListCopy);
+    }
+
+    public static InterferenceGraph createFrom(List<Node> totallyOrderedNodes, HashMap<Node, Set<Node>> livenessInformation) {
+        InterferenceGraph interferenceGraph = new InterferenceGraph();
+        totallyOrderedNodes.forEach(interferenceGraph::addNode);
+
+        Set<Node> liveAtSuccessor = Set.of();
+        for (Node node : totallyOrderedNodes.reversed()) {
+            switch (node) {
+                case BinaryOperationNode b -> {
+                    liveAtSuccessor
+                            .stream()
+                            .filter(u -> node != u)
+                            .forEach(u -> interferenceGraph.addEdge(node, u));
+                }
+                case ConstIntNode c -> {
+                    liveAtSuccessor
+                            .stream()
+                            .filter(u -> node != u)
+                            .forEach(u -> interferenceGraph.addEdge(node, u));
+                }
+                default -> {
+                }
+            }
+            liveAtSuccessor = livenessInformation.get(node);
+        }
+
+        return interferenceGraph;
     }
 }
