@@ -49,31 +49,34 @@ public class Main {
             }
         }
 
-        // TODO: generate assembly and invoke gcc instead of generating abstract assembly
+        int gccExitCode = 0;
         try {
             String s = new CodeGenerator().generateCode(graphs);
-            Files.writeString(output, s);
+
+            String fileName = input.getFileName().toString() + ".s";
+            String assemblyFilePath = input.resolveSibling(fileName).toString();
+            Path assemblyPath = Path.of(assemblyFilePath);
+            Files.writeString(assemblyPath, s);
+
+            gccExitCode = generateExecutable(assemblyPath, output);
+        }
+        catch (InterruptedException e) {
+            e.printStackTrace();
         }
         catch (Exception e) {
             e.printStackTrace();
             throw e;
         }
 
-        generateExecutable(output);
+        if (gccExitCode != 0) {
+            System.exit(gccExitCode);
+        }
     }
 
-    private static void generateExecutable(Path assemblyFilePath) throws IOException {
-        Path executablePath = null;
-        String fileName = assemblyFilePath.getFileName().toString();
-        if (fileName.endsWith(".s")) {
-            String newFileName = fileName.substring(0, fileName.length() - 2);
-            executablePath = assemblyFilePath.resolveSibling(newFileName);
-        }
-        else {
-            executablePath = Path.of(assemblyFilePath.getParent().toString(), "executable");;
-        }
-
-        Runtime.getRuntime().exec(new String[] {"gcc", "-o", executablePath.toString(), assemblyFilePath.toString()});
+    private static int generateExecutable(Path assemblyFilePath, Path outputFilePath) throws IOException, InterruptedException {
+        Process gccProcess = Runtime.getRuntime().exec(new String[] {"gcc", "-o", outputFilePath.toString(), assemblyFilePath.toString()});
+        gccProcess.waitFor();
+        return gccProcess.exitValue();
     }
 
     private static ProgramTree lexAndParse(Path input) throws IOException {

@@ -14,61 +14,27 @@ import static edu.kit.kastel.vads.compiler.ir.util.NodeSupport.predecessorSkipPr
 
 public class AasmRegisterAllocator implements RegisterAllocator {
 
-    @Override
-    public Map<Node, Register> allocateRegisters(List<Node> totallyOrderedNodes) {
-        HashMap<Node, Set<Node>> liveNodes = analyzeLiveness(totallyOrderedNodes);
+    private final LivenessAnalysis livenessAnalysis;
 
-        InterferenceGraph interferenceGraph = InterferenceGraph.createFrom(totallyOrderedNodes, liveNodes);
+    public AasmRegisterAllocator(LivenessAnalysis livenessAnalysis) {
+        this.livenessAnalysis = livenessAnalysis;
+    }
+
+    @Override
+    public RegisterAllocationResult allocateRegisters(NodeSequence nodeSequence) {
+        LivenessAnalysisResult livenessAnalysisResult = livenessAnalysis.analyzeLiveness(nodeSequence);
+
+        InterferenceGraph interferenceGraph = InterferenceGraph.createFrom(nodeSequence, livenessAnalysisResult);
 
         List<Node> simplicialEliminationOrderedNodes = getSimplicialEliminationOrderedNodes(interferenceGraph);
 
         Map<Node, Integer> coloring = colorInterferenceGraph(interferenceGraph, simplicialEliminationOrderedNodes);
 
-        return mapColorsToRegisters(coloring);
+        return new RegisterAllocationResult(livenessAnalysisResult, mapColorsToRegisters(coloring));
     }
 
 
-    private HashMap<Node, Set<Node>> analyzeLiveness(List<Node> totallyOrderedNodes) {
-        HashMap<Node, Set<Node>> liveNodes = new HashMap<>();
-        Set<Node> liveAtSuccessor = new HashSet<>();
-        for (Node node : totallyOrderedNodes.reversed()) {
-            analyzeLivenessRecursive(node, liveNodes, liveAtSuccessor);
-            liveAtSuccessor = liveNodes.get(node);
-        }
-        return liveNodes;
-    }
 
-    private void analyzeLivenessRecursive(Node node, HashMap<Node, Set<Node>> liveNodes, Set<Node> liveAtSuccessor) {
-        switch (node) {
-            case ReturnNode r -> {
-                Set<Node> currentlyLive = Set.of(predecessorSkipProj(r, ReturnNode.RESULT));
-                liveNodes.putIfAbsent(r, currentlyLive);
-            }
-            case BinaryOperationNode b -> {
-                Set<Node> currentlyLive = new HashSet<>();
-                currentlyLive.add(b.predecessor(BinaryOperationNode.LEFT));
-                currentlyLive.add(b.predecessor(BinaryOperationNode.RIGHT));
-                currentlyLive.addAll(liveAtSuccessor
-                        .stream()
-                        .filter(u -> u != node)
-                        .collect(Collectors.toSet()));
-                liveNodes.put(node, currentlyLive);
-            }
-            case ConstIntNode c -> {
-                Set<Node> currentlyLive = liveAtSuccessor
-                        .stream()
-                        .filter(u -> u != node)
-                        .collect(Collectors.toSet());
-
-                liveNodes.put(node, currentlyLive);
-            }
-            case Phi _ -> throw new UnsupportedOperationException("phi");
-            case Block _, ProjNode _, StartNode _ -> {
-                // do nothing, skip line break
-                return;
-            }
-        };
-    }
 
     private List<Node> getSimplicialEliminationOrderedNodes(
             InterferenceGraph interferenceGraphRef) {
@@ -142,7 +108,7 @@ public class AasmRegisterAllocator implements RegisterAllocator {
         Set<Node> remainingNodes = colors.keySet().stream().collect(Collectors.toSet());
 
         // Do precoloring for return node
-        for (Node node : colors.keySet()) {
+        /*for (Node node : colors.keySet()) {
             switch (node) {
                 case ReturnNode r -> {
                     Node resultPredecessor = predecessorSkipProj(r, ReturnNode.RESULT);
@@ -157,7 +123,7 @@ public class AasmRegisterAllocator implements RegisterAllocator {
                 }
                 default -> {}
             }
-        }
+        }*/
 
         Set<Register> remainingRegisters = new HashSet<>(X86Register.getGeneralPurposeRegisters());
         while (!remainingNodes.isEmpty()) {

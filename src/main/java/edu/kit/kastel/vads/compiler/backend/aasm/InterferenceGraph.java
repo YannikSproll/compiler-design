@@ -80,12 +80,12 @@ public final class InterferenceGraph {
         return new InterferenceGraph(adjacencyListCopy);
     }
 
-    public static InterferenceGraph createFrom(List<Node> totallyOrderedNodes, HashMap<Node, Set<Node>> livenessInformation) {
+    public static InterferenceGraph createFrom(NodeSequence nodeSequence, LivenessAnalysisResult livenessAnalysisResult) {
         InterferenceGraph interferenceGraph = new InterferenceGraph();
-        totallyOrderedNodes.forEach(interferenceGraph::addNode);
+        nodeSequence.getSequence().forEach(interferenceGraph::addNode);
 
         Set<Node> liveAtSuccessor = Set.of();
-        for (Node node : totallyOrderedNodes.reversed()) {
+        for (Node node : nodeSequence.getSequence().reversed()) {
             switch (node) {
                 case BinaryOperationNode b -> {
                     liveAtSuccessor
@@ -102,7 +102,7 @@ public final class InterferenceGraph {
                 default -> {
                 }
             }
-            liveAtSuccessor = livenessInformation.get(node);
+            liveAtSuccessor = livenessAnalysisResult.getLiveNodesAt(node);
         }
 
         return interferenceGraph;

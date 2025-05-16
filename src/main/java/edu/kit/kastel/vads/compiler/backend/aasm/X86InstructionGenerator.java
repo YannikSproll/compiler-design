@@ -75,7 +75,7 @@ public class X86InstructionGenerator {
 
     public X86InstructionGenerator generateSignExtendInstruction() {
         generateIndentationSpace();
-        builder.append("CLTD")
+        builder.append("cqo")
                 .append(NEW_LINE);
         return this;
     }

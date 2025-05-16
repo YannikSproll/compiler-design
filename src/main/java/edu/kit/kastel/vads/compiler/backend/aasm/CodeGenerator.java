@@ -39,13 +39,14 @@ public class CodeGenerator {
     public String generateCode(List<IrGraph> program) {
         StringBuilder builder = new StringBuilder();
         for (IrGraph graph : program) {
-            AasmRegisterAllocator allocator = new AasmRegisterAllocator();
-            List<Node> totallyOrderedNodes = getTotallyOrderedNodes(graph);
+            LivenessAnalysis livenessAnalysis = new LivenessAnalysis();
+            AasmRegisterAllocator allocator = new AasmRegisterAllocator(livenessAnalysis);
+            NodeSequence nodeSequence = getTotallyOrderedNodes(graph);
 
-            Map<Node, Register> registers = allocator.allocateRegisters(totallyOrderedNodes);
+            RegisterAllocationResult allocationResult = allocator.allocateRegisters(nodeSequence);
 
             builder.append(X86_HEADER_ASSEMBLY);
-            generateInstructions(totallyOrderedNodes, builder, registers);
+            generateInstructions(nodeSequence, builder, allocationResult);
             builder.append(NON_EXECUTABLE_STACK);
         }
         return builder.toString();
@@ -53,23 +54,23 @@ public class CodeGenerator {
 
 
 
-    private void generateInstructions(List<Node> totallyOrderedNodes, StringBuilder builder, Map<Node, Register> registers) {
+    private void generateInstructions(NodeSequence nodeSequence, StringBuilder builder, RegisterAllocationResult allocationResult) {
         X86InstructionGenerator instructionGenerator = new X86InstructionGenerator(builder);
 
-        for (Node node : totallyOrderedNodes) {
-            generateInstructionForNode(node, instructionGenerator, registers);
+        for (Node node : nodeSequence.getSequence()) {
+            generateInstructionForNode(node, instructionGenerator, allocationResult);
         }
     }
 
-    private void generateInstructionForNode(Node node, X86InstructionGenerator instructionGenerator, Map<Node, Register> registers) {
+    private void generateInstructionForNode(Node node, X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult) {
         switch (node) {
-            case AddNode add -> generateAdd(instructionGenerator, registers, add);
-            case SubNode sub -> generateSub(instructionGenerator, registers, sub);
-            case MulNode mul -> generateMult(instructionGenerator, registers, mul);
-            case DivNode div -> generateDiv(instructionGenerator, registers, div);
-            case ModNode mod -> generateMod(instructionGenerator, registers, mod);
-            case ReturnNode r -> generateReturn(instructionGenerator, registers, r);
-            case ConstIntNode c -> instructionGenerator.generateIntConstInstruction(registers.get(c), c.value());
+            case AddNode add -> generateAdd(instructionGenerator, allocationResult, add);
+            case SubNode sub -> generateSub(instructionGenerator, allocationResult, sub);
+            case MulNode mul -> generateMult(instructionGenerator, allocationResult, mul);
+            case DivNode div -> generateDiv(instructionGenerator, allocationResult, div);
+            case ModNode mod -> generateMod(instructionGenerator, allocationResult, mod);
+            case ReturnNode r -> generateReturn(instructionGenerator, allocationResult, r);
+            case ConstIntNode c -> instructionGenerator.generateIntConstInstruction(allocationResult.nodeToRegisterMapping().get(c), c.value());
             case Phi _ -> throw new UnsupportedOperationException("phi");
             case Block _, ProjNode _, StartNode _ -> {
                 // do nothing, skip line break
@@ -78,70 +79,77 @@ public class CodeGenerator {
         }
     }
 
-    private static void generateAdd(X86InstructionGenerator instructionGenerator, Map<Node, Register> registers, AddNode addNode) {
-        Register leftOperandRegister = registers.get(predecessorSkipProj(addNode, BinaryOperationNode.LEFT));
-        Register rightOperandRegister = registers.get(predecessorSkipProj(addNode, BinaryOperationNode.RIGHT));
-        Register targetRegister = registers.get(addNode);
+    private static void generateAdd(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, AddNode addNode) {
+        Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(addNode, BinaryOperationNode.LEFT));
+        Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(addNode, BinaryOperationNode.RIGHT));
+        Register targetRegister = allocationResult.nodeToRegisterMapping().get(addNode);
 
+        Register sourceRegister;
         if (leftOperandRegister != targetRegister && rightOperandRegister != targetRegister) {
-            // None of the operands is in the target register, but this is required in x86, so we move it there.
-            int x = 5;
+            instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister);
+            sourceRegister = rightOperandRegister;
+        } else {
+            sourceRegister = leftOperandRegister != targetRegister ? leftOperandRegister : rightOperandRegister;
         }
-
-        Register sourceRegister = leftOperandRegister != targetRegister ? leftOperandRegister : rightOperandRegister;
 
         instructionGenerator.generateAdditionInstruction(sourceRegister, targetRegister);
     }
 
-    private  static void generateSub(X86InstructionGenerator instructionGenerator, Map<Node, Register> registers, SubNode subNode) {
-        Register leftOperandRegister = registers.get(predecessorSkipProj(subNode, BinaryOperationNode.LEFT));
-        Register rightOperandRegister = registers.get(predecessorSkipProj(subNode, BinaryOperationNode.RIGHT));
-        Register targetRegister = registers.get(subNode);
+    private  static void generateSub(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, SubNode subNode) {
+        Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(subNode, BinaryOperationNode.LEFT));
+        Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(subNode, BinaryOperationNode.RIGHT));
+        Register targetRegister = allocationResult.nodeToRegisterMapping().get(subNode);
 
+        Register sourceRegister;
         if (leftOperandRegister != targetRegister && rightOperandRegister != targetRegister) {
             // None of the operands is in the target register, but this is required in x86, so we move it there.
-            int x = 5;
+            instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister);
+            sourceRegister = rightOperandRegister;
+        } else if (rightOperandRegister == targetRegister) { // Right operand is the target register -> swap registers
+            sourceRegister = rightOperandRegister;
+        } else { // Left operand register is the target register
+            sourceRegister = leftOperandRegister;
         }
-
-        Register sourceRegister = leftOperandRegister != targetRegister ? leftOperandRegister : rightOperandRegister;
 
         instructionGenerator.generateSubtractionInstruction(sourceRegister, targetRegister);
     }
 
-    private  static void generateMult(X86InstructionGenerator instructionGenerator, Map<Node, Register> registers, MulNode mulNode) {
-        Register leftOperandRegister = registers.get(predecessorSkipProj(mulNode, BinaryOperationNode.LEFT));
-        Register rightOperandRegister = registers.get(predecessorSkipProj(mulNode, BinaryOperationNode.RIGHT));
-        Register targetRegister = registers.get(mulNode);
+    private  static void generateMult(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, MulNode mulNode) {
+        Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(mulNode, BinaryOperationNode.LEFT));
+        Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(mulNode, BinaryOperationNode.RIGHT));
+        Register targetRegister = allocationResult.nodeToRegisterMapping().get(mulNode);
 
+        Register sourceRegister;
         if (leftOperandRegister != targetRegister && rightOperandRegister != targetRegister) {
             // None of the operands is in the target register, but this is required in x86, so we move it there.
-            int x = 5;
+            instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister);
+            sourceRegister = rightOperandRegister;
+        } else {
+            sourceRegister = leftOperandRegister != targetRegister ? leftOperandRegister : rightOperandRegister;
         }
-
-        Register sourceRegister = leftOperandRegister != targetRegister ? leftOperandRegister : rightOperandRegister;
 
         instructionGenerator.generateMultiplicationInstruction(sourceRegister, targetRegister);
     }
 
 
-    private static void generateDiv(X86InstructionGenerator instructionGenerator, Map<Node, Register> registers, DivNode divNode) {
+    private static void generateDiv(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, DivNode divNode) {
         instructionGenerator
-                .generateMoveInstruction(registers.get(predecessorSkipProj(divNode, BinaryOperationNode.LEFT)), X86Register.REG_AX)
+                .generateMoveInstruction(allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(divNode, BinaryOperationNode.LEFT)), X86Register.REG_AX)
                 .generateSignExtendInstruction()
-                .generateIntegerDivisionInstruction(registers.get(predecessorSkipProj(divNode, BinaryOperationNode.RIGHT)))
-                .generateMoveInstruction(X86Register.REG_AX, registers.get(divNode));
+                .generateIntegerDivisionInstruction(allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(divNode, BinaryOperationNode.RIGHT)))
+                .generateMoveInstruction(X86Register.REG_AX, allocationResult.nodeToRegisterMapping().get(divNode));
     }
 
-    private static void generateMod(X86InstructionGenerator instructionGenerator, Map<Node, Register> registers, ModNode modNode) {
+    private static void generateMod(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, ModNode modNode) {
         instructionGenerator
-                .generateMoveInstruction(registers.get(predecessorSkipProj(modNode, BinaryOperationNode.LEFT)), X86Register.REG_AX)
+                .generateMoveInstruction(allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(modNode, BinaryOperationNode.LEFT)), X86Register.REG_AX)
                 .generateSignExtendInstruction()
-                .generateIntegerDivisionInstruction(registers.get(predecessorSkipProj(modNode, BinaryOperationNode.RIGHT)))
-                .generateMoveInstruction(X86Register.REG_DX, registers.get(modNode));
+                .generateIntegerDivisionInstruction(allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(modNode, BinaryOperationNode.RIGHT)))
+                .generateMoveInstruction(X86Register.REG_DX, allocationResult.nodeToRegisterMapping().get(modNode));
     }
 
-    private static void generateReturn(X86InstructionGenerator instructionGenerator, Map<Node, Register> registers, ReturnNode returnNode) {
-        Register returnValueRegister = registers.get(predecessorSkipProj(returnNode, ReturnNode.RESULT));
+    private static void generateReturn(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, ReturnNode returnNode) {
+        Register returnValueRegister = allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(returnNode, ReturnNode.RESULT));
         if (returnValueRegister != X86Register.REG_AX) {
             instructionGenerator.generateMoveInstruction(returnValueRegister, X86Register.REG_AX);
         }
@@ -149,12 +157,12 @@ public class CodeGenerator {
         instructionGenerator.generateReturnInstruction();
     }
 
-    private List<Node> getTotallyOrderedNodes(IrGraph graph) {
+    private NodeSequence getTotallyOrderedNodes(IrGraph graph) {
         Node endBlock = graph.endBlock();
         List<Node> totallyOrderedNodes = new ArrayList<>();
         Set<Node> visited = new HashSet<>();
         getTotallyOrderedNodesRecursive(endBlock, visited, totallyOrderedNodes);
-        return totallyOrderedNodes;
+        return NodeSequence.createFrom(totallyOrderedNodes);
     }
 
     private void getTotallyOrderedNodesRecursive(Node node, Set<Node> visited, List<Node> orderedNodes) {

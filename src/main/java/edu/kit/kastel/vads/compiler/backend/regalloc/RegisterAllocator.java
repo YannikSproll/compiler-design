@@ -1,12 +1,9 @@
 package edu.kit.kastel.vads.compiler.backend.regalloc;
 
-import edu.kit.kastel.vads.compiler.ir.IrGraph;
-import edu.kit.kastel.vads.compiler.ir.node.Node;
-
-import java.util.List;
-import java.util.Map;
+import edu.kit.kastel.vads.compiler.backend.aasm.NodeSequence;
+import edu.kit.kastel.vads.compiler.backend.aasm.RegisterAllocationResult;
 
 public interface RegisterAllocator {
 
-    Map<Node, Register> allocateRegisters(List<Node> totallyOrderedNodes);
+    RegisterAllocationResult allocateRegisters(NodeSequence nodeSequence);
 }
