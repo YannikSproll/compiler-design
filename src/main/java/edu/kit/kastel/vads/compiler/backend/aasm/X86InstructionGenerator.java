@@ -15,7 +15,7 @@ public class X86InstructionGenerator {
 
     public X86InstructionGenerator generateIntConstInstruction(Register targetRegister, int constant) {
         generateIndentationSpace();
-        builder.append("movq")
+        builder.append("movl")
                 .append(" $")
                 .append(constant)
                 .append(REGISTER_SEPARATOR)
@@ -33,7 +33,7 @@ public class X86InstructionGenerator {
 
     public X86InstructionGenerator generateAdditionInstruction(Register sourceRegister, Register destinationRegister) {
         generateIndentationSpace();
-        builder.append("addq")
+        builder.append("addl")
                 .append(" ")
                 .append(sourceRegister)
                 .append(", ")
@@ -44,7 +44,7 @@ public class X86InstructionGenerator {
 
     public X86InstructionGenerator generateSubtractionInstruction(Register sourceRegister, Register destinationRegister) {
         generateIndentationSpace();
-        builder.append("subq")
+        builder.append("subl")
                 .append(" ")
                 .append(sourceRegister)
                 .append(", ")
@@ -55,7 +55,7 @@ public class X86InstructionGenerator {
 
     public X86InstructionGenerator generateMultiplicationInstruction(Register sourceRegister, Register destinationRegister) {
         generateIndentationSpace();
-        builder.append("imulq")
+        builder.append("imull")
                 .append(" ")
                 .append(sourceRegister)
                 .append(", ")
@@ -66,7 +66,7 @@ public class X86InstructionGenerator {
 
     public X86InstructionGenerator generateIntegerDivisionInstruction(Register divisorRegister) {
         generateIndentationSpace();
-        builder.append("idivq")
+        builder.append("idivl")
                 .append(" ")
                 .append(divisorRegister)
                 .append(NEW_LINE);
@@ -75,14 +75,14 @@ public class X86InstructionGenerator {
 
     public X86InstructionGenerator generateSignExtendInstruction() {
         generateIndentationSpace();
-        builder.append("cqo")
+        builder.append("cltd")
                 .append(NEW_LINE);
         return this;
     }
 
     public X86InstructionGenerator generateMoveInstruction(Register sourceRegister, Register destinationRegister) {
         generateIndentationSpace();
-        builder.append("movq")
+        builder.append("movl")
                 .append(" ")
                 .append(sourceRegister)
                 .append(REGISTER_SEPARATOR)
