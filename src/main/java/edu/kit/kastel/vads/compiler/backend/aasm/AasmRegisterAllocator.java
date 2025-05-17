@@ -30,7 +30,8 @@ public class AasmRegisterAllocator implements RegisterAllocator {
 
         Map<Node, Integer> coloring = colorInterferenceGraph(interferenceGraph, simplicialEliminationOrderedNodes);
 
-        return new RegisterAllocationResult(livenessAnalysisResult, mapColorsToRegisters(coloring));
+        ColorToRegisterMappingResult mappingResult = mapColorsToRegisters(coloring);
+        return new RegisterAllocationResult(livenessAnalysisResult, mappingResult.mapping(), mappingResult.tempRegister(), mappingResult.registers());
     }
 
 
@@ -96,18 +97,18 @@ public class AasmRegisterAllocator implements RegisterAllocator {
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get()));
     }
 
-    private Map<Node, Register> mapColorsToRegisters(Map<Node, Integer> colors) {
+    private ColorToRegisterMappingResult mapColorsToRegisters(Map<Node, Integer> colors) {
         Map<Integer, HashSet<Node>> invertedMap = colors.entrySet()
                 .stream()
                 .collect(Collectors.groupingBy(
                         Map.Entry::getValue,
                         Collectors.mapping(Map.Entry::getKey,
                                 Collectors.toCollection(HashSet::new))));
-        Map<Node, Register> registers = new HashMap<>();
+        Map<Node, Register> colorToRegisterMapping = new HashMap<>();
 
         Set<Node> remainingNodes = colors.keySet().stream().collect(Collectors.toSet());
 
-        // Do precoloring for return node
+        // Do precoloring for return node || Commented out because of unclear interference with division
         /*for (Node node : colors.keySet()) {
             switch (node) {
                 case ReturnNode r -> {
@@ -126,21 +127,41 @@ public class AasmRegisterAllocator implements RegisterAllocator {
         }*/
 
         Set<Register> remainingRegisters = new HashSet<>(X86Register.getGeneralPurposeRegisters());
+
+        Register tempRegister = remainingRegisters.stream().findFirst().get();
+        remainingRegisters.remove(tempRegister); // Remove one register which can later be used as a temp register
+
+        HashSet<Register> registers = new HashSet<>();
+
+        int numberOfStackSlots = 0;
+        // Get
         while (!remainingNodes.isEmpty()) {
             Node node = remainingNodes.stream().findFirst().get();
-            Register nodeRegister = remainingRegisters.stream().findFirst().get();
+            Optional<Register> nextRegister = remainingRegisters.stream().findFirst();
+
+            Register nodeRegister;
+            if (nextRegister.isPresent()) {
+                nodeRegister = nextRegister.get();
+            } else {
+                nodeRegister = new StackSlot(numberOfStackSlots);
+                numberOfStackSlots++;
+            }
+
+            registers.add(nodeRegister);
 
             Integer color = colors.get(node);
             HashSet<Node> affectedNodes = invertedMap.get(color);
             for (Node affectedNode : affectedNodes) {
                 remainingNodes.remove(affectedNode);
-                registers.put(affectedNode, nodeRegister);
+                colorToRegisterMapping.put(affectedNode, nodeRegister);
             }
 
             remainingNodes.remove(node);
             remainingRegisters.remove(nodeRegister);
         }
 
-        return registers;
+        return new ColorToRegisterMappingResult(colorToRegisterMapping, tempRegister, registers);
     }
+
+    private record ColorToRegisterMappingResult(Map<Node, Register> mapping, Register tempRegister, Set<Register> registers) { }
 }

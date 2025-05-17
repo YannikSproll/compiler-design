@@ -57,9 +57,21 @@ public class CodeGenerator {
     private void generateInstructions(NodeSequence nodeSequence, StringBuilder builder, RegisterAllocationResult allocationResult) {
         X86InstructionGenerator instructionGenerator = new X86InstructionGenerator(builder);
 
+        /*long numberOfStackSlots = allocationResult.registers().stream().filter(x -> x instanceof StackSlot).count();
+        if (numberOfStackSlots > 0) {
+            builder.append("  subq $")
+                    .append(numberOfStackSlots * 8).append(", %rsp\n");
+        }*/
+
         for (Node node : nodeSequence.getSequence()) {
             generateInstructionForNode(node, instructionGenerator, allocationResult);
         }
+
+        /*
+        if (numberOfStackSlots > 0) {
+            builder.append("  addq $")
+                    .append(numberOfStackSlots * 8).append(", %rsp\n");
+        }*/
     }
 
     private void generateInstructionForNode(Node node, X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult) {
@@ -70,13 +82,21 @@ public class CodeGenerator {
             case DivNode div -> generateDiv(instructionGenerator, allocationResult, div);
             case ModNode mod -> generateMod(instructionGenerator, allocationResult, mod);
             case ReturnNode r -> generateReturn(instructionGenerator, allocationResult, r);
-            case ConstIntNode c -> instructionGenerator.generateIntConstInstruction(allocationResult.nodeToRegisterMapping().get(c), c.value());
+            case ConstIntNode c -> instructionGenerator.generateIntConstInstruction(allocationResult.nodeToRegisterMapping().get(c), c.value(), BitSize.BIT_32);
             case Phi _ -> throw new UnsupportedOperationException("phi");
             case Block _, ProjNode _, StartNode _ -> {
                 // do nothing, skip line break
                 return;
             }
         }
+    }
+
+    private static void generateStackAllocation(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, int numberOfStackSlots) {
+        instructionGenerator.generateSubtractionInstruction(new IntegerConstantParameter(numberOfStackSlots * 8), X86Register.REG_BP, BitSize.BIT_64);
+    }
+
+    private static void generateStackDeallocation(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, int numberOfStackSlots) {
+        instructionGenerator.generateAdditionInstruction(new IntegerConstantParameter(numberOfStackSlots * 8), X86Register.REG_BP, BitSize.BIT_64);
     }
 
     private static void generateAdd(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, AddNode addNode) {
@@ -86,13 +106,13 @@ public class CodeGenerator {
 
         Register sourceRegister;
         if (leftOperandRegister != targetRegister && rightOperandRegister != targetRegister) {
-            instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister);
+            instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister, BitSize.BIT_32);
             sourceRegister = rightOperandRegister;
         } else {
             sourceRegister = leftOperandRegister != targetRegister ? leftOperandRegister : rightOperandRegister;
         }
 
-        instructionGenerator.generateAdditionInstruction(sourceRegister, targetRegister);
+        instructionGenerator.generateAdditionInstruction(sourceRegister, targetRegister, BitSize.BIT_32);
     }
 
     private  static void generateSub(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, SubNode subNode) {
@@ -102,8 +122,8 @@ public class CodeGenerator {
 
         if (leftOperandRegister != targetRegister && rightOperandRegister != targetRegister) {
             // None of the operands is in the target register, but this is required in x86, so we move it there.
-            instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister);
-            instructionGenerator.generateSubtractionInstruction(rightOperandRegister, targetRegister);
+            instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister, BitSize.BIT_32);
+            instructionGenerator.generateSubtractionInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
         } else if (rightOperandRegister == targetRegister) { // Right operand is the target register -> move left to temp register
             HashSet<Register> possibleTempRegisters = new HashSet<>(X86Register.getGeneralPurposeRegisters());
             possibleTempRegisters.remove(leftOperandRegister);
@@ -115,12 +135,12 @@ public class CodeGenerator {
             }
 
             Register tempRegister = possibleTempRegisters.stream().findFirst().get();
-            instructionGenerator.generateMoveInstruction(leftOperandRegister, tempRegister)
-                    .generateSubtractionInstruction(rightOperandRegister, tempRegister)
-                    .generateMoveInstruction(tempRegister, targetRegister);
+            instructionGenerator.generateMoveInstruction(leftOperandRegister, tempRegister, BitSize.BIT_32)
+                    .generateSubtractionInstruction(rightOperandRegister, tempRegister, BitSize.BIT_32)
+                    .generateMoveInstruction(tempRegister, targetRegister, BitSize.BIT_32);
 
         } else { // Left operand register is the target register
-            instructionGenerator.generateSubtractionInstruction(rightOperandRegister, targetRegister);
+            instructionGenerator.generateSubtractionInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
         }
     }
 
@@ -132,36 +152,36 @@ public class CodeGenerator {
         Register sourceRegister;
         if (leftOperandRegister != targetRegister && rightOperandRegister != targetRegister) {
             // None of the operands is in the target register, but this is required in x86, so we move it there.
-            instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister);
+            instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister, BitSize.BIT_32);
             sourceRegister = rightOperandRegister;
         } else {
             sourceRegister = leftOperandRegister != targetRegister ? leftOperandRegister : rightOperandRegister;
         }
 
-        instructionGenerator.generateMultiplicationInstruction(sourceRegister, targetRegister);
+        instructionGenerator.generateMultiplicationInstruction(sourceRegister, targetRegister, BitSize.BIT_32);
     }
 
 
     private static void generateDiv(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, DivNode divNode) {
         instructionGenerator
-                .generateMoveInstruction(allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(divNode, BinaryOperationNode.LEFT)), X86Register.REG_AX)
-                .generateSignExtendInstruction()
-                .generateIntegerDivisionInstruction(allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(divNode, BinaryOperationNode.RIGHT)))
-                .generateMoveInstruction(X86Register.REG_AX, allocationResult.nodeToRegisterMapping().get(divNode));
+                .generateMoveInstruction(allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(divNode, BinaryOperationNode.LEFT)), X86Register.REG_AX, BitSize.BIT_32)
+                .generateSignExtendInstruction(BitSize.BIT_32)
+                .generateIntegerDivisionInstruction(allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(divNode, BinaryOperationNode.RIGHT)), BitSize.BIT_32)
+                .generateMoveInstruction(X86Register.REG_AX, allocationResult.nodeToRegisterMapping().get(divNode), BitSize.BIT_32);
     }
 
     private static void generateMod(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, ModNode modNode) {
         instructionGenerator
-                .generateMoveInstruction(allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(modNode, BinaryOperationNode.LEFT)), X86Register.REG_AX)
-                .generateSignExtendInstruction()
-                .generateIntegerDivisionInstruction(allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(modNode, BinaryOperationNode.RIGHT)))
-                .generateMoveInstruction(X86Register.REG_DX, allocationResult.nodeToRegisterMapping().get(modNode));
+                .generateMoveInstruction(allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(modNode, BinaryOperationNode.LEFT)), X86Register.REG_AX, BitSize.BIT_32)
+                .generateSignExtendInstruction(BitSize.BIT_32)
+                .generateIntegerDivisionInstruction(allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(modNode, BinaryOperationNode.RIGHT)), BitSize.BIT_32)
+                .generateMoveInstruction(X86Register.REG_DX, allocationResult.nodeToRegisterMapping().get(modNode), BitSize.BIT_32);
     }
 
     private static void generateReturn(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, ReturnNode returnNode) {
         Register returnValueRegister = allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(returnNode, ReturnNode.RESULT));
         if (returnValueRegister != X86Register.REG_AX) {
-            instructionGenerator.generateMoveInstruction(returnValueRegister, X86Register.REG_AX);
+            instructionGenerator.generateMoveInstruction(returnValueRegister, X86Register.REG_AX, BitSize.BIT_32);
         }
 
         instructionGenerator.generateReturnInstruction();
