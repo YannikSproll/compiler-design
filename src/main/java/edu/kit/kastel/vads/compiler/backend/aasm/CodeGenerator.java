@@ -100,18 +100,28 @@ public class CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(subNode, BinaryOperationNode.RIGHT));
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(subNode);
 
-        Register sourceRegister;
         if (leftOperandRegister != targetRegister && rightOperandRegister != targetRegister) {
             // None of the operands is in the target register, but this is required in x86, so we move it there.
             instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister);
-            sourceRegister = rightOperandRegister;
-        } else if (rightOperandRegister == targetRegister) { // Right operand is the target register -> swap registers
-            sourceRegister = rightOperandRegister;
-        } else { // Left operand register is the target register
-            sourceRegister = leftOperandRegister;
-        }
+            instructionGenerator.generateSubtractionInstruction(rightOperandRegister, targetRegister);
+        } else if (rightOperandRegister == targetRegister) { // Right operand is the target register -> move left to temp register
+            HashSet<Register> possibleTempRegisters = new HashSet<>(X86Register.getGeneralPurposeRegisters());
+            possibleTempRegisters.remove(leftOperandRegister);
+            possibleTempRegisters.remove(rightOperandRegister);
+            Set<Node> currentlyLiveNodes = allocationResult.livenessAnalysisResult().getLiveNodesAt(subNode);
+            for (Node node : currentlyLiveNodes) {
+                Register register = allocationResult.nodeToRegisterMapping().get(node);
+                possibleTempRegisters.remove(register);
+            }
 
-        instructionGenerator.generateSubtractionInstruction(sourceRegister, targetRegister);
+            Register tempRegister = possibleTempRegisters.stream().findFirst().get();
+            instructionGenerator.generateMoveInstruction(leftOperandRegister, tempRegister)
+                    .generateSubtractionInstruction(rightOperandRegister, tempRegister)
+                    .generateMoveInstruction(tempRegister, targetRegister);
+
+        } else { // Left operand register is the target register
+            instructionGenerator.generateSubtractionInstruction(rightOperandRegister, targetRegister);
+        }
     }
 
     private  static void generateMult(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, MulNode mulNode) {
