@@ -57,21 +57,17 @@ public class CodeGenerator {
     private void generateInstructions(NodeSequence nodeSequence, StringBuilder builder, RegisterAllocationResult allocationResult) {
         X86InstructionGenerator instructionGenerator = new X86InstructionGenerator(builder);
 
-        /*long numberOfStackSlots = allocationResult.registers().stream().filter(x -> x instanceof StackSlot).count();
+        int numberOfStackSlots = (int) allocationResult.registers().stream().filter(x -> x instanceof StackSlot).count();
         if (numberOfStackSlots > 0) {
-            builder.append("  subq $")
-                    .append(numberOfStackSlots * 8).append(", %rsp\n");
-        }*/
+            generateStackAllocation(instructionGenerator, allocationResult, numberOfStackSlots);
+        }
 
         for (Node node : nodeSequence.getSequence()) {
             generateInstructionForNode(node, instructionGenerator, allocationResult);
         }
 
         /*
-        if (numberOfStackSlots > 0) {
-            builder.append("  addq $")
-                    .append(numberOfStackSlots * 8).append(", %rsp\n");
-        }*/
+        */
     }
 
     private void generateInstructionForNode(Node node, X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult) {
@@ -81,7 +77,14 @@ public class CodeGenerator {
             case MulNode mul -> generateMult(instructionGenerator, allocationResult, mul);
             case DivNode div -> generateDiv(instructionGenerator, allocationResult, div);
             case ModNode mod -> generateMod(instructionGenerator, allocationResult, mod);
-            case ReturnNode r -> generateReturn(instructionGenerator, allocationResult, r);
+            case ReturnNode r ->  {
+                int numberOfStackSlots = (int) allocationResult.registers().stream().filter(x -> x instanceof StackSlot).count();
+                if (numberOfStackSlots > 0) {
+                    generateStackDeallocation(instructionGenerator, allocationResult, numberOfStackSlots);
+                }
+
+                generateReturn(instructionGenerator, allocationResult, r);
+            }
             case ConstIntNode c -> instructionGenerator.generateIntConstInstruction(allocationResult.nodeToRegisterMapping().get(c), c.value(), BitSize.BIT_32);
             case Phi _ -> throw new UnsupportedOperationException("phi");
             case Block _, ProjNode _, StartNode _ -> {
@@ -92,11 +95,11 @@ public class CodeGenerator {
     }
 
     private static void generateStackAllocation(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, int numberOfStackSlots) {
-        instructionGenerator.generateSubtractionInstruction(new IntegerConstantParameter(numberOfStackSlots * 8), X86Register.REG_BP, BitSize.BIT_64);
+        instructionGenerator.generateSubtractionInstruction(new IntegerConstantParameter(numberOfStackSlots * 8), X86Register.REG_SP, BitSize.BIT_64);
     }
 
     private static void generateStackDeallocation(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, int numberOfStackSlots) {
-        instructionGenerator.generateAdditionInstruction(new IntegerConstantParameter(numberOfStackSlots * 8), X86Register.REG_BP, BitSize.BIT_64);
+        instructionGenerator.generateAdditionInstruction(new IntegerConstantParameter(numberOfStackSlots * 8), X86Register.REG_SP, BitSize.BIT_64);
     }
 
     private static void generateAdd(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, AddNode addNode) {
