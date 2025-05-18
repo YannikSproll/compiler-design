@@ -15,6 +15,24 @@ public class X86InstructionGenerator {
         this.formatter = new X86InstructionLiteralFormatter();
     }
 
+    public X86InstructionGenerator generatePushInstruction(InstructionParameter registerToPush, BitSize bitSize) {
+        generateIndentationSpace();
+        builder.append(formatter.formatInstruction(X86Instruction.PUSH, bitSize))
+                .append(" ")
+                .append(formatInstructionParameter(registerToPush, bitSize))
+                .append(NEW_LINE);
+        return this;
+    }
+
+    public X86InstructionGenerator generatePopInstruction(InstructionParameter registerToPop, BitSize bitSize) {
+        generateIndentationSpace();
+        builder.append(formatter.formatInstruction(X86Instruction.POP, bitSize))
+                .append(" ")
+                .append(formatInstructionParameter(registerToPop, bitSize))
+                .append(NEW_LINE);
+        return this;
+    }
+
     public X86InstructionGenerator generateIntConstInstruction(InstructionParameter targetRegister, int constant, BitSize bitSize) {
         generateIndentationSpace();
         builder.append(formatter.formatInstruction(X86Instruction.MOV, bitSize))
@@ -96,7 +114,7 @@ public class X86InstructionGenerator {
     private String formatInstructionParameter(InstructionParameter parameter, BitSize bitSize) {
         String s = switch (parameter) {
             case X86Register reg -> formatter.formatRegisterName(reg, bitSize);
-            case StackSlot ss -> "-" + ss.getLocalIndex() + "(" + formatter.formatRegisterName(X86Register.REG_BP, bitSize) + ")";
+            case StackSlot ss -> "-" + (ss.getLocalIndex() + 1) * 8 + "(" + formatter.formatRegisterName(X86Register.REG_BP, BitSize.BIT_64) + ")";
             case IntegerConstantParameter ic -> "$" + ic.getValue();
         };
         return s;

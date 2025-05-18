@@ -7,5 +7,7 @@ public enum X86Instruction {
     MULT,
     DIV,
     SIGN_EXTEND,
-    RETURN
+    RETURN,
+    PUSH,
+    POP
 }

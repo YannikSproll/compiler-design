@@ -64,6 +64,8 @@ public final class X86InstructionLiteralFormatter {
         BIT_32_INSTRUCTION_NAME_MAP.put(X86Instruction.DIV, "idivl");
         BIT_32_INSTRUCTION_NAME_MAP.put(X86Instruction.SIGN_EXTEND, "cltd");
         BIT_32_INSTRUCTION_NAME_MAP.put(X86Instruction.RETURN, "ret");
+        BIT_32_INSTRUCTION_NAME_MAP.put(X86Instruction.PUSH, "push");
+        BIT_32_INSTRUCTION_NAME_MAP.put(X86Instruction.POP, "pop");
     }
 
     private static final Map<X86Instruction, String> BIT_64_INSTRUCTION_NAME_MAP;
@@ -76,6 +78,8 @@ public final class X86InstructionLiteralFormatter {
         BIT_64_INSTRUCTION_NAME_MAP.put(X86Instruction.DIV, "idivq");
         BIT_64_INSTRUCTION_NAME_MAP.put(X86Instruction.SIGN_EXTEND, "cqo");
         BIT_64_INSTRUCTION_NAME_MAP.put(X86Instruction.RETURN, "ret");
+        BIT_64_INSTRUCTION_NAME_MAP.put(X86Instruction.PUSH, "push");
+        BIT_64_INSTRUCTION_NAME_MAP.put(X86Instruction.POP, "pop");
     }
 
     public String formatInstruction(X86Instruction instruction, BitSize bitSize) {
