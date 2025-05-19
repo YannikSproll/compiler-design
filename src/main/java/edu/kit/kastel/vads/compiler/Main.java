@@ -74,7 +74,11 @@ public class Main {
     }
 
     private static int generateExecutable(Path assemblyFilePath, Path outputFilePath) throws IOException, InterruptedException {
-        Process gccProcess = Runtime.getRuntime().exec(new String[] {"gcc", "-o", outputFilePath.toString(), assemblyFilePath.toString()});
+        Process gccProcess = new ProcessBuilder(new String[] {"gcc", "-g", "-o", outputFilePath.toString(), assemblyFilePath.toString()})
+                .redirectOutput(ProcessBuilder.Redirect.INHERIT)
+                .redirectError(ProcessBuilder.Redirect.INHERIT)
+                .start();
+
         gccProcess.waitFor();
         return gccProcess.exitValue();
     }

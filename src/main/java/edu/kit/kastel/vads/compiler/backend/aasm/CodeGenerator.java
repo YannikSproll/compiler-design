@@ -15,6 +15,7 @@ import edu.kit.kastel.vads.compiler.ir.node.ProjNode;
 import edu.kit.kastel.vads.compiler.ir.node.ReturnNode;
 import edu.kit.kastel.vads.compiler.ir.node.StartNode;
 import edu.kit.kastel.vads.compiler.ir.node.SubNode;
+import edu.kit.kastel.vads.compiler.ir.util.DebugInfo;
 
 import java.util.*;
 
@@ -23,6 +24,7 @@ import static edu.kit.kastel.vads.compiler.ir.util.NodeSupport.predecessorSkipPr
 public class CodeGenerator {
 
     private static String X86_HEADER_ASSEMBLY =
+            ".file 1 \"first.l1\"\n" +
             ".global main\n" +
             ".global _main\n" +
             ".text\n" +
@@ -67,9 +69,6 @@ public class CodeGenerator {
         for (Node node : nodeSequence.getSequence()) {
             generateInstructionForNode(node, instructionGenerator, allocationResult);
         }
-
-        /*
-        */
     }
 
     private void generateInstructionForNode(Node node, X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult) {
@@ -80,10 +79,9 @@ public class CodeGenerator {
             case DivNode div -> generateDiv(instructionGenerator, allocationResult, div);
             case ModNode mod -> generateMod(instructionGenerator, allocationResult, mod);
             case ReturnNode r ->  {
-
                 generateReturn(instructionGenerator, allocationResult, r);
             }
-            case ConstIntNode c -> instructionGenerator.generateIntConstInstruction(allocationResult.nodeToRegisterMapping().get(c), c.value(), BitSize.BIT_32);
+            case ConstIntNode c -> generateConstantInstruction(instructionGenerator, allocationResult, c);
             case Phi _ -> throw new UnsupportedOperationException("phi");
             case Block _, ProjNode _, StartNode _ -> {
                 // do nothing, skip line break
@@ -109,7 +107,15 @@ public class CodeGenerator {
         instructionGenerator.generateAdditionInstruction(new IntegerConstantParameter((numberOfStackSlots + 1) * 8), X86Register.REG_SP, BitSize.BIT_64);
     }
 
+    private static void generateConstantInstruction(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, ConstIntNode constIntNode) {
+        generateLineDebugging(instructionGenerator, constIntNode);
+
+        instructionGenerator.generateIntConstInstruction(allocationResult.nodeToRegisterMapping().get(constIntNode), constIntNode.value(), BitSize.BIT_32);
+    }
+
     private static void generateAdd(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, AddNode addNode) {
+        generateLineDebugging(instructionGenerator, addNode);
+
         Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(addNode, BinaryOperationNode.LEFT));
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(addNode, BinaryOperationNode.RIGHT));
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(addNode);
@@ -132,6 +138,8 @@ public class CodeGenerator {
     }
 
     private  static void generateSub(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, SubNode subNode) {
+        generateLineDebugging(instructionGenerator, subNode);
+
         Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(subNode, BinaryOperationNode.LEFT));
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(subNode, BinaryOperationNode.RIGHT));
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(subNode);
@@ -155,6 +163,8 @@ public class CodeGenerator {
     }
 
     private  static void generateMult(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, MulNode mulNode) {
+        generateLineDebugging(instructionGenerator, mulNode);
+
         Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(mulNode, BinaryOperationNode.LEFT));
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(mulNode, BinaryOperationNode.RIGHT));
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(mulNode);
@@ -178,6 +188,8 @@ public class CodeGenerator {
 
 
     private static void generateDiv(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, DivNode divNode) {
+        generateLineDebugging(instructionGenerator, divNode);
+
         instructionGenerator
                 .generateMoveInstruction(allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(divNode, BinaryOperationNode.LEFT)), X86Register.REG_AX, BitSize.BIT_32)
                 .generateSignExtendInstruction(BitSize.BIT_32)
@@ -186,6 +198,8 @@ public class CodeGenerator {
     }
 
     private static void generateMod(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, ModNode modNode) {
+        generateLineDebugging(instructionGenerator, modNode);
+
         instructionGenerator
                 .generateMoveInstruction(allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(modNode, BinaryOperationNode.LEFT)), X86Register.REG_AX, BitSize.BIT_32)
                 .generateSignExtendInstruction(BitSize.BIT_32)
@@ -194,6 +208,8 @@ public class CodeGenerator {
     }
 
     private static void generateReturn(X86InstructionGenerator instructionGenerator, RegisterAllocationResult allocationResult, ReturnNode returnNode) {
+        generateLineDebugging(instructionGenerator, returnNode);
+
         Register returnValueRegister = allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(returnNode, ReturnNode.RESULT));
         if (returnValueRegister != X86Register.REG_AX) {
             instructionGenerator.generateMoveInstruction(returnValueRegister, X86Register.REG_AX, BitSize.BIT_32);
@@ -207,6 +223,12 @@ public class CodeGenerator {
         generateStackPointerPop(instructionGenerator);
 
         instructionGenerator.generateReturnInstruction();
+    }
+
+    private static void generateLineDebugging(X86InstructionGenerator instructionGenerator, Node node) {
+        if (node.debugInfo() instanceof DebugInfo.SourceInfo(edu.kit.kastel.vads.compiler.Span span)) {
+            instructionGenerator.generateLOCAnnotation(1, span.start().line(), span.start().column());
+        }
     }
 
     private NodeSequence getTotallyOrderedNodes(IrGraph graph) {

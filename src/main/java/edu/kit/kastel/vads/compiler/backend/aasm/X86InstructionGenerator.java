@@ -15,6 +15,68 @@ public class X86InstructionGenerator {
         this.formatter = new X86InstructionLiteralFormatter();
     }
 
+    public X86InstructionGenerator generateGlobal(String label) {
+        builder.append(".global ")
+                .append(label)
+                .append(NEW_LINE);
+        return this;
+    }
+
+    public X86InstructionGenerator generateFile(int fileNumber, String filename) {
+        builder.append(".file ")
+                .append(fileNumber)
+                .append(" \"")
+                .append(filename)
+                .append("\"")
+                .append(NEW_LINE);
+        return this;
+    }
+
+    public X86InstructionGenerator generateLOCAnnotation(int fileNumber, int lineNumber, int columnNumber) {
+        generateIndentationSpace();
+        builder.append(".loc ")
+                .append(fileNumber)
+                .append(" ")
+                .append(lineNumber)
+                .append(" ")
+                .append(columnNumber)
+                .append(NEW_LINE);
+        return this;
+    }
+
+    public X86InstructionGenerator generateLabel(String label) {
+        builder.append(label)
+                .append(":")
+                .append(NEW_LINE);
+        return this;
+    }
+
+    public X86InstructionGenerator generateEmptyLine() {
+        builder.append(NEW_LINE);
+        return this;
+    }
+
+    public X86InstructionGenerator generateText() {
+        builder.append(".text")
+                .append(NEW_LINE);
+        return this;
+    }
+
+    public X86InstructionGenerator generateSyscall() {
+        generateIndentationSpace();
+        builder.append("syscall")
+                .append(NEW_LINE);
+        return this;
+    }
+
+    public X86InstructionGenerator generateCall(String label) {
+        generateIndentationSpace();
+        builder.append("call ")
+                .append(label)
+                .append(NEW_LINE);
+        return this;
+    }
+
     public X86InstructionGenerator generatePushInstruction(InstructionParameter registerToPush, BitSize bitSize) {
         generateIndentationSpace();
         builder.append(formatter.formatInstruction(X86Instruction.PUSH, bitSize))
