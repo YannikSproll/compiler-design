@@ -13,7 +13,7 @@ import edu.kit.kastel.vads.compiler.ir.node.ReturnNode;
 import edu.kit.kastel.vads.compiler.ir.node.StartNode;
 import edu.kit.kastel.vads.compiler.ir.node.SubNode;
 import edu.kit.kastel.vads.compiler.ir.optimize.Optimizer;
-import edu.kit.kastel.vads.compiler.parser.symbol.Name;
+import edu.kit.kastel.vads.compiler.frontend.parser.symbol.Name;
 
 import java.util.*;
 
