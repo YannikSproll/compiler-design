@@ -15,10 +15,7 @@ import edu.kit.kastel.vads.compiler.ir.node.SubNode;
 import edu.kit.kastel.vads.compiler.ir.optimize.Optimizer;
 import edu.kit.kastel.vads.compiler.parser.symbol.Name;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 class GraphConstructor {
 
@@ -29,6 +26,7 @@ class GraphConstructor {
     private final Map<Block, Node> currentSideEffect = new HashMap<>();
     private final Map<Block, Phi> incompleteSideEffectPhis = new HashMap<>();
     private final Set<Block> sealedBlocks = new HashSet<>();
+    private final List<Node> originalOrderedNodes = new ArrayList<>();
     private Block currentBlock;
 
     public GraphConstructor(Optimizer optimizer, String name) {
@@ -45,32 +43,46 @@ class GraphConstructor {
     }
 
     public Node newAdd(Node left, Node right) {
-        return this.optimizer.transform(new AddNode(currentBlock(), left, right));
+        AddNode addNode = new AddNode(currentBlock(), left, right);
+        originalOrderedNodes.add(addNode);
+        return this.optimizer.transform(addNode);
     }
     public Node newSub(Node left, Node right) {
-        return this.optimizer.transform(new SubNode(currentBlock(), left, right));
+        SubNode subNode = new SubNode(currentBlock(), left, right);
+        originalOrderedNodes.add(subNode);
+        return this.optimizer.transform(subNode);
     }
 
     public Node newMul(Node left, Node right) {
-        return this.optimizer.transform(new MulNode(currentBlock(), left, right));
+        MulNode mulNode = new MulNode(currentBlock(), left, right);
+        originalOrderedNodes.add(mulNode);
+        return this.optimizer.transform(mulNode);
     }
 
     public Node newDiv(Node left, Node right) {
-        return this.optimizer.transform(new DivNode(currentBlock(), left, right, readCurrentSideEffect()));
+        DivNode divNode = new DivNode(currentBlock(), left, right, readCurrentSideEffect());
+        originalOrderedNodes.add(divNode);
+        return this.optimizer.transform(divNode);
     }
 
     public Node newMod(Node left, Node right) {
-        return this.optimizer.transform(new ModNode(currentBlock(), left, right, readCurrentSideEffect()));
+        ModNode modNode = new ModNode(currentBlock(), left, right, readCurrentSideEffect());
+        originalOrderedNodes.add(modNode);
+        return this.optimizer.transform(modNode);
     }
 
     public Node newReturn(Node result) {
-        return new ReturnNode(currentBlock(), readCurrentSideEffect(), result);
+        ReturnNode returnNode = new ReturnNode(currentBlock(), readCurrentSideEffect(), result);
+        originalOrderedNodes.add(returnNode);
+        return returnNode;
     }
 
     public Node newConstInt(int value) {
         // always move const into start block, this allows better deduplication
         // and resultingly in better value numbering
-        return this.optimizer.transform(new ConstIntNode(this.graph.startBlock(), value));
+        ConstIntNode constIntNode = new ConstIntNode(this.graph.startBlock(), value);
+        originalOrderedNodes.add(constIntNode);
+        return this.optimizer.transform(constIntNode);
     }
 
     public Node newSideEffectProj(Node node) {
