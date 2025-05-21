@@ -1,6 +1,6 @@
 package edu.kit.kastel.vads.compiler.pipeline;
 
-import edu.kit.kastel.vads.compiler.backend.aasm.CodeGenerator;
+import edu.kit.kastel.vads.compiler.backend.aasm.*;
 import edu.kit.kastel.vads.compiler.ir.IrGraph;
 
 import java.io.IOException;
@@ -13,7 +13,12 @@ public class CodeGenerationStep {
     public void run(List<IrGraph> graphs, CompilerPipelineRunInfo runInfo) throws IOException {
         int gccExitCode = 0;
         try {
-            String s = new CodeGenerator().generateCode(graphs);
+            StringBuilder codeBuilder = new StringBuilder();
+            X86InstructionGenerator instructionGenerator = new X86InstructionGenerator(codeBuilder);
+            CodeGenerator codeGenerator = new DebugCodeGeneratorDecorator(new X86Bit64CodeGenerator(instructionGenerator));
+
+            new InstructionSelector().generateCode(graphs, codeGenerator);
+            String s = codeBuilder.toString();
 
             String fileName = runInfo.sourceFilePath().getFileName().toString() + ".s";
             String assemblyFilePath = runInfo.sourceFilePath().resolveSibling(fileName).toString();
