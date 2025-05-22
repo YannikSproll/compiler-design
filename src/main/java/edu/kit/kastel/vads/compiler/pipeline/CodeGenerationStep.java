@@ -10,22 +10,24 @@ import java.util.List;
 
 public class CodeGenerationStep {
 
-    public void run(List<IrGraph> graphs, CompilerPipelineRunInfo runInfo) throws IOException {
+    public void run(List<IrGraph> graphs, CodeGenerationContext codeGenerationContext) throws IOException {
         int gccExitCode = 0;
         try {
             StringBuilder codeBuilder = new StringBuilder();
             X86InstructionGenerator instructionGenerator = new X86InstructionGenerator(codeBuilder);
             CodeGenerator codeGenerator = new DebugCodeGeneratorDecorator(new X86Bit64CodeGenerator(instructionGenerator));
 
-            new InstructionSelector().generateCode(graphs, codeGenerator);
+            DefaultNodeSequenceAnalysis sequenceAnalysis = new DefaultNodeSequenceAnalysis();
+            InstructionSelector instructionSelector = new InstructionSelector(sequenceAnalysis);
+            instructionSelector.generateCode(graphs, codeGenerator, codeGenerationContext.runInfo().sourceFilePath().toString());
             String s = codeBuilder.toString();
 
-            String fileName = runInfo.sourceFilePath().getFileName().toString() + ".s";
-            String assemblyFilePath = runInfo.sourceFilePath().resolveSibling(fileName).toString();
+            String fileName = codeGenerationContext.runInfo().sourceFilePath().getFileName().toString() + ".s";
+            String assemblyFilePath = codeGenerationContext.runInfo().sourceFilePath().resolveSibling(fileName).toString();
             Path assemblyPath = Path.of(assemblyFilePath);
             Files.writeString(assemblyPath, s);
 
-            gccExitCode = generateExecutable(assemblyPath, runInfo.outputFilePath());
+            gccExitCode = generateExecutable(assemblyPath, codeGenerationContext.runInfo().outputFilePath());
         }
         catch (InterruptedException e) {
             e.printStackTrace();

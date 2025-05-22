@@ -24,9 +24,9 @@ public final class CompilerPipeline {
 
         semanticAnalysisStep.run(ast);
 
-
         List<IrGraph> irGraphs = irStep.run(ast);
 
-        codeGenerationStep.run(irGraphs, runInfo);
+        CodeGenerationContext codeGenerationContext = new CodeGenerationContext(ast, runInfo);
+        codeGenerationStep.run(irGraphs, codeGenerationContext);
     }
 }

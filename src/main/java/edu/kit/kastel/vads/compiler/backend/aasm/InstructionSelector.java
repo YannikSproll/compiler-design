@@ -18,35 +18,43 @@ import edu.kit.kastel.vads.compiler.ir.node.SubNode;
 import java.util.*;
 
 public class InstructionSelector {
+
+    private final NodeSequenceAnalysis nodeSequentializationAnalysis;
+
     private static String NON_EXECUTABLE_STACK =
             ".section .note.GNU-stack,\"\",@progbits\n";
 
+    public InstructionSelector(NodeSequenceAnalysis nodeSequentializationAnalysis) {
+        this.nodeSequentializationAnalysis = nodeSequentializationAnalysis;
+    }
 
-    public void generateCode(List<IrGraph> program, CodeGenerator codeGenerator) {
+    public void generateCode(List<IrGraph> program, CodeGenerator codeGenerator, String sourceFileName) {
+        X86InstructionGenerator instructionGenerator = codeGenerator.getX86InstructionGenerator();
+
+        instructionGenerator.generateFile(1, sourceFileName)
+                .generateGlobal("main")
+                .generateGlobal("_main")
+                .generateText()
+                .generateLabel("main")
+                .generateCall("_main")
+                .generateMoveInstruction(X86Register.REG_AX, X86Register.REG_DI, BitSize.BIT_64)
+                .generateMoveInstruction(new IntegerConstantParameter(0x3C), X86Register.REG_AX, BitSize.BIT_64)
+                .generateSyscall();
 
         for (IrGraph graph : program) {
+            instructionGenerator.generateLabel("_" + graph.name());
 
             LivenessAnalysis livenessAnalysis = new LivenessAnalysis();
             AasmRegisterAllocator allocator = new AasmRegisterAllocator(livenessAnalysis);
-            NodeSequence nodeSequence = getTotallyOrderedNodes(graph);
+            NodeSequence nodeSequence = nodeSequentializationAnalysis.sequenceNodes(graph);
 
             RegisterAllocationResult allocationResult = allocator.allocateRegisters(nodeSequence);
 
-            X86InstructionGenerator instructionGenerator = codeGenerator.getX86InstructionGenerator();
-            instructionGenerator.generateFile(1, "first.l1")
-                    .generateGlobal("main")
-                    .generateGlobal("_main")
-                    .generateText()
-                    .generateLabel("main")
-                    .generateCall("_main")
-                    .generateMoveInstruction(X86Register.REG_AX, X86Register.REG_DI, BitSize.BIT_64)
-                    .generateMoveInstruction(new IntegerConstantParameter(0x3C), X86Register.REG_AX, BitSize.BIT_64)
-                    .generateSyscall()
-                    .generateLabel("_main");
-
             generateInstructions(nodeSequence, codeGenerator, allocationResult);
-            instructionGenerator.generateFromString(NON_EXECUTABLE_STACK);
+            instructionGenerator.generateEmptyLine();
         }
+
+        instructionGenerator.generateFromString(NON_EXECUTABLE_STACK);
     }
 
     private void generateInstructions(NodeSequence nodeSequence, CodeGenerator codeGenerator, RegisterAllocationResult allocationResult) {
@@ -79,27 +87,5 @@ public class InstructionSelector {
         }
     }
 
-    private NodeSequence getTotallyOrderedNodes(IrGraph graph) {
-        Node endBlock = graph.endBlock();
-        List<Node> totallyOrderedNodes = new ArrayList<>();
-        Set<Node> visited = new HashSet<>();
-        getTotallyOrderedNodesRecursive(endBlock, visited, totallyOrderedNodes);
-        return NodeSequence.createFrom(totallyOrderedNodes);
-    }
 
-    private void getTotallyOrderedNodesRecursive(Node node, Set<Node> visited, List<Node> orderedNodes) {
-        for (Node predecessor : node.predecessors()) {
-            if (visited.add(predecessor)) {
-                getTotallyOrderedNodesRecursive(predecessor, visited, orderedNodes);
-            }
-        }
-
-        switch (node) {
-            case ReturnNode _, BinaryOperationNode _, ConstIntNode _ -> {
-                orderedNodes.add(node);
-            }
-            case Block _, ProjNode _, StartNode _, Phi _ -> {
-            }
-        };
-    }
 }
