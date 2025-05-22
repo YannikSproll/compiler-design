@@ -46,7 +46,8 @@ public class AasmRegisterAllocator implements RegisterAllocator {
                 .getNodes()
                 .stream()
                 .collect(Collectors.toMap(Function.identity(),_ -> 0));
-        Optional<Node> maximumCardinalityNode = interferenceGraph.getMaximumCardinalityNode();
+
+        Optional<Node> maximumCardinalityNode = interferenceGraph.getMaximumCardinalityNode(nodeWeights);
 
         while (maximumCardinalityNode.isPresent()) {
             simplicialEliminationOrderedNodes.add(maximumCardinalityNode.get());
@@ -55,7 +56,7 @@ public class AasmRegisterAllocator implements RegisterAllocator {
             }
             interferenceGraph.removeNode(maximumCardinalityNode.get());
 
-            maximumCardinalityNode = interferenceGraph.getMaximumCardinalityNode();
+            maximumCardinalityNode = interferenceGraph.getMaximumCardinalityNode(nodeWeights);
         }
 
         return simplicialEliminationOrderedNodes;

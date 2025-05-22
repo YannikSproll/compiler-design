@@ -7,6 +7,8 @@ import edu.kit.kastel.vads.compiler.ir.node.Node;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static edu.kit.kastel.vads.compiler.ir.util.NodeSupport.predecessorSkipProj;
+
 public final class InterferenceGraph {
     private final Map<Node, HashSet<Node>> adjacencyList;
 
@@ -57,11 +59,11 @@ public final class InterferenceGraph {
         adjacencyList.remove(n);
     }
 
-    public Optional<Node> getMaximumCardinalityNode() {
+    public Optional<Node> getMaximumCardinalityNode(Map<Node, Integer> cardinalities) {
         return adjacencyList
                 .entrySet()
                 .stream()
-                .max(Comparator.comparingInt(x -> x.getValue().size()))
+                .max(Comparator.comparingInt(x -> cardinalities.get(x.getKey())))
                 .map(Map.Entry::getKey);
     }
 
@@ -88,7 +90,7 @@ public final class InterferenceGraph {
         for (Node node : nodeSequence.getSequence().reversed()) {
             switch (node) {
                 case BinaryOperationNode b -> {
-                    liveAtSuccessor
+                     liveAtSuccessor
                             .stream()
                             .filter(u -> node != u)
                             .forEach(u -> interferenceGraph.addEdge(node, u));
