@@ -4,8 +4,8 @@ public final class ProjNode extends Node {
     public static final int IN = 0;
     private final ProjectionInfo projectionInfo;
 
-    public ProjNode(Block block, Node in, ProjectionInfo projectionInfo) {
-        super(block, in);
+    public ProjNode(Block block, Node in, ProjectionInfo projectionInfo, int order) {
+        super(block, order, in);
         this.projectionInfo = projectionInfo;
     }
 

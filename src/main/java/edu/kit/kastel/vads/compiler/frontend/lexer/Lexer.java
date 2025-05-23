@@ -140,6 +140,9 @@ public class Lexer {
         // This is a naive solution. Using a better data structure (hashmap, trie) likely performs better.
         for (KeywordType value : KeywordType.values()) {
             if (value.keyword().equals(id)) {
+                if (value == KeywordType.RETURN) {
+                    int x = 5;
+                }
                 return new Keyword(value, buildSpan(off));
             }
         }

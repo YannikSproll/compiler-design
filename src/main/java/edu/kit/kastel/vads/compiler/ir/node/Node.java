@@ -13,8 +13,9 @@ public sealed abstract class Node permits BinaryOperationNode, Block, ConstIntNo
     private final Block block;
     private final List<Node> predecessors = new ArrayList<>();
     private final DebugInfo debugInfo;
+    private final int order;
 
-    protected Node(Block block, Node... predecessors) {
+    protected Node(Block block, int order, Node... predecessors) {
         this.graph = block.graph();
         this.block = block;
         this.predecessors.addAll(List.of(predecessors));
@@ -22,13 +23,15 @@ public sealed abstract class Node permits BinaryOperationNode, Block, ConstIntNo
             graph.registerSuccessor(predecessor, this);
         }
         this.debugInfo = DebugInfoHelper.getDebugInfo();
+        this.order = order;
     }
 
-    protected Node(IrGraph graph) {
+    protected Node(IrGraph graph, int order) {
         assert this.getClass() == Block.class : "must be used by Block only";
         this.graph = graph;
         this.block = (Block) this;
         this.debugInfo = DebugInfo.NoInfo.INSTANCE;
+        this.order = order;
     }
 
     public final IrGraph graph() {
@@ -37,6 +40,10 @@ public sealed abstract class Node permits BinaryOperationNode, Block, ConstIntNo
 
     public final Block block() {
         return this.block;
+    }
+
+    public final int order() {
+        return this.order;
     }
 
     public final List<? extends Node> predecessors() {

@@ -2,8 +2,8 @@ package edu.kit.kastel.vads.compiler.ir.node;
 
 public final class ModNode extends BinaryOperationNode {
     public static final int SIDE_EFFECT = 2;
-    public ModNode(Block block, Node left, Node right, Node sideEffect) {
-        super(block, left, right, sideEffect);
+    public ModNode(Block block, Node left, Node right, Node sideEffect, int order) {
+        super(block, left, right, sideEffect, order);
     }
 
     @Override

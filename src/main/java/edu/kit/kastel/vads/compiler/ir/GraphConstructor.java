@@ -26,7 +26,7 @@ class GraphConstructor {
     private final Map<Block, Node> currentSideEffect = new HashMap<>();
     private final Map<Block, Phi> incompleteSideEffectPhis = new HashMap<>();
     private final Set<Block> sealedBlocks = new HashSet<>();
-    private final List<Node> originalOrderedNodes = new ArrayList<>();
+    private int currentBlockCount;
     private Block currentBlock;
 
     public GraphConstructor(Optimizer optimizer, String name) {
@@ -35,62 +35,56 @@ class GraphConstructor {
         this.currentBlock = this.graph.startBlock();
         // the start block never gets any more predecessors
         sealBlock(this.currentBlock);
+        this.currentBlockCount = graph.endBlock().order();
     }
 
     public Node newStart() {
         assert currentBlock() == this.graph.startBlock() : "start must be in start block";
-        return new StartNode(currentBlock());
+        return new StartNode(currentBlock(), currentBlockCount++);
     }
 
     public Node newAdd(Node left, Node right) {
-        AddNode addNode = new AddNode(currentBlock(), left, right);
-        originalOrderedNodes.add(addNode);
+        AddNode addNode = new AddNode(currentBlock(), left, right, currentBlockCount++);
         return this.optimizer.transform(addNode);
     }
     public Node newSub(Node left, Node right) {
-        SubNode subNode = new SubNode(currentBlock(), left, right);
-        originalOrderedNodes.add(subNode);
+        SubNode subNode = new SubNode(currentBlock(), left, right, currentBlockCount++);
         return this.optimizer.transform(subNode);
     }
 
     public Node newMul(Node left, Node right) {
-        MulNode mulNode = new MulNode(currentBlock(), left, right);
-        originalOrderedNodes.add(mulNode);
+        MulNode mulNode = new MulNode(currentBlock(), left, right, currentBlockCount++);
         return this.optimizer.transform(mulNode);
     }
 
     public Node newDiv(Node left, Node right) {
-        DivNode divNode = new DivNode(currentBlock(), left, right, readCurrentSideEffect());
-        originalOrderedNodes.add(divNode);
+        DivNode divNode = new DivNode(currentBlock(), left, right, readCurrentSideEffect(), currentBlockCount++);
         return this.optimizer.transform(divNode);
     }
 
     public Node newMod(Node left, Node right) {
-        ModNode modNode = new ModNode(currentBlock(), left, right, readCurrentSideEffect());
-        originalOrderedNodes.add(modNode);
+        ModNode modNode = new ModNode(currentBlock(), left, right, readCurrentSideEffect(), currentBlockCount++);
         return this.optimizer.transform(modNode);
     }
 
     public Node newReturn(Node result) {
-        ReturnNode returnNode = new ReturnNode(currentBlock(), readCurrentSideEffect(), result);
-        originalOrderedNodes.add(returnNode);
+        ReturnNode returnNode = new ReturnNode(currentBlock(), readCurrentSideEffect(), result, currentBlockCount++);
         return returnNode;
     }
 
     public Node newConstInt(int value) {
         // always move const into start block, this allows better deduplication
         // and resultingly in better value numbering
-        ConstIntNode constIntNode = new ConstIntNode(this.graph.startBlock(), value);
-        originalOrderedNodes.add(constIntNode);
+        ConstIntNode constIntNode = new ConstIntNode(this.graph.startBlock(), value, currentBlockCount++);
         return this.optimizer.transform(constIntNode);
     }
 
     public Node newSideEffectProj(Node node) {
-        return new ProjNode(currentBlock(), node, ProjNode.SimpleProjectionInfo.SIDE_EFFECT);
+        return new ProjNode(currentBlock(), node, ProjNode.SimpleProjectionInfo.SIDE_EFFECT, currentBlockCount++);
     }
 
     public Node newResultProj(Node node) {
-        return new ProjNode(currentBlock(), node, ProjNode.SimpleProjectionInfo.RESULT);
+        return new ProjNode(currentBlock(), node, ProjNode.SimpleProjectionInfo.RESULT, currentBlockCount++);
     }
 
     public Block currentBlock() {
@@ -99,7 +93,7 @@ class GraphConstructor {
 
     public Phi newPhi() {
         // don't transform phi directly, it is not ready yet
-        return new Phi(currentBlock());
+        return new Phi(currentBlock(), currentBlockCount++);
     }
 
     public IrGraph graph() {

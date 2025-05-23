@@ -42,7 +42,8 @@ public class InstructionSelector {
                 .generateSyscall();
 
         for (IrGraph graph : program) {
-            instructionGenerator.generateLabel("_" + graph.name());
+            instructionGenerator.generateEmptyLine()
+                    .generateLabel("_" + graph.name());
 
             LivenessAnalysis livenessAnalysis = new LivenessAnalysis();
             AasmRegisterAllocator allocator = new AasmRegisterAllocator(livenessAnalysis);
@@ -51,7 +52,6 @@ public class InstructionSelector {
             RegisterAllocationResult allocationResult = allocator.allocateRegisters(nodeSequence);
 
             generateInstructions(nodeSequence, codeGenerator, allocationResult);
-            instructionGenerator.generateEmptyLine();
         }
 
         instructionGenerator.generateFromString(NON_EXECUTABLE_STACK);

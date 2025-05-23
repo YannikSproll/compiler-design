@@ -2,8 +2,8 @@ package edu.kit.kastel.vads.compiler.ir.node;
 
 public final class AddNode extends BinaryOperationNode {
 
-    public AddNode(Block block, Node left, Node right) {
-        super(block, left, right);
+    public AddNode(Block block, Node left, Node right, int order) {
+        super(block, left, right, order);
     }
 
     @SuppressWarnings("EqualsDoesntCheckParameterClass") // we do, but not here

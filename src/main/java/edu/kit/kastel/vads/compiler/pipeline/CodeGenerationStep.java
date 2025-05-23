@@ -17,7 +17,7 @@ public class CodeGenerationStep {
             X86InstructionGenerator instructionGenerator = new X86InstructionGenerator(codeBuilder);
             CodeGenerator codeGenerator = new DebugCodeGeneratorDecorator(new X86Bit64CodeGenerator(instructionGenerator));
 
-            DefaultNodeSequenceAnalysis sequenceAnalysis = new DefaultNodeSequenceAnalysis();
+            NodeSequenceAnalysis sequenceAnalysis = new DebugNodeSequenceAnalysis();
             InstructionSelector instructionSelector = new InstructionSelector(sequenceAnalysis);
             instructionSelector.generateCode(graphs, codeGenerator, codeGenerationContext.runInfo().sourceFilePath().toString());
             String s = codeBuilder.toString();

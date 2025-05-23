@@ -4,12 +4,12 @@ public sealed abstract class BinaryOperationNode extends Node permits AddNode, D
     public static final int LEFT = 0;
     public static final int RIGHT = 1;
 
-    protected BinaryOperationNode(Block block, Node left, Node right) {
-        super(block, left, right);
+    protected BinaryOperationNode(Block block, Node left, Node right, int order) {
+        super(block, order, left, right);
     }
 
-    protected BinaryOperationNode(Block block, Node left, Node right, Node sideEffect) {
-        super(block, left, right, sideEffect);
+    protected BinaryOperationNode(Block block, Node left, Node right, Node sideEffect, int order) {
+        super(block, order, left, right, sideEffect);
     }
 
     protected static int commutativeHashCode(BinaryOperationNode node) {

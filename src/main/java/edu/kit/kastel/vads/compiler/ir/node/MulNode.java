@@ -1,8 +1,8 @@
 package edu.kit.kastel.vads.compiler.ir.node;
 
 public final class MulNode extends BinaryOperationNode {
-    public MulNode(Block block, Node left, Node right) {
-        super(block, left, right);
+    public MulNode(Block block, Node left, Node right, int order) {
+        super(block, left, right, order);
     }
 
     @SuppressWarnings("EqualsDoesntCheckParameterClass") // we do, but not here

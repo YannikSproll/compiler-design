@@ -9,7 +9,8 @@ import java.util.stream.Collectors;
 
 import static edu.kit.kastel.vads.compiler.ir.util.NodeSupport.predecessorSkipProj;
 
-public class LivenessAnalysis {
+public final class LivenessAnalysis {
+
     public LivenessAnalysisResult analyzeLiveness(NodeSequence nodeSequence) {
         HashMap<Node, Set<Node>> liveNodes = new HashMap<>();
         Set<Node> liveAtSuccessor = new HashSet<>();
@@ -52,4 +53,6 @@ public class LivenessAnalysis {
             }
         };
     }
+
+
 }

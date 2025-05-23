@@ -3,8 +3,8 @@ package edu.kit.kastel.vads.compiler.ir.node;
 public final class ConstIntNode extends Node {
     private final int value;
 
-    public ConstIntNode(Block block, int value) {
-        super(block);
+    public ConstIntNode(Block block, int value, int order) {
+        super(block, order);
         this.value = value;
     }
 
