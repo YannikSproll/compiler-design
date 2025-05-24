@@ -41,7 +41,67 @@ public class Lexer {
             case '*' -> singleOrAssign(OperatorType.MUL, OperatorType.ASSIGN_MUL);
             case '/' -> singleOrAssign(OperatorType.DIV, OperatorType.ASSIGN_DIV);
             case '%' -> singleOrAssign(OperatorType.MOD, OperatorType.ASSIGN_MOD);
-            case '=' -> new Operator(OperatorType.ASSIGN, buildSpan(1));
+            case '=' -> {
+                if (hasMore(1) && peek(1) == '=') {
+                    yield new Operator(OperatorType.EQUAL_TO, buildSpan(2));
+                }
+                yield new Operator(OperatorType.ASSIGN, buildSpan(1));
+            }
+            // L2
+            case '!' -> {
+                if (hasMore(1) && peek(1) == '=') {
+                    yield new Operator(OperatorType.UNEQUAL_TO, buildSpan(2));
+                }
+                yield new Operator(OperatorType.LOGICAL_NOT, buildSpan(1));
+            }
+            case '^' -> singleOrAssign(OperatorType.BITWISE_XOR, OperatorType.ASSIGN_BITWISE_XOR);
+            case '&' -> {
+                if (hasMore(1)) {
+                    if (peek(1) == '&') {
+                        yield new Operator(OperatorType.LOGICAL_AND, buildSpan(2));
+                    } else if (peek(1) == '=') {
+                        yield new Operator(OperatorType.ASSIGN_BITWISE_AND, buildSpan(2));
+                    }
+                }
+                yield new Operator(OperatorType.BITWISE_AND, buildSpan(1));
+            }
+            case '|' -> {
+                if (hasMore(1)) {
+                    if (peek(1) == '|') {
+                        yield new Operator(OperatorType.LOGICAL_OR, buildSpan(2));
+                    } else if (peek(1) == '=') {
+                        yield new Operator(OperatorType.ASSIGN_BITWISE_OR, buildSpan(2));
+                    }
+                }
+                yield new Operator(OperatorType.BITWISE_OR, buildSpan(1));
+            }
+            case '~' -> new Operator(OperatorType.BITWISE_NOT, buildSpan(1));
+            case '<' -> {
+                if (hasMore(1)) {
+                    if (peek(1) == '<') {
+                        if (hasMore(2) && peek(2) == '=') {
+                            yield new Operator(OperatorType.ASSIGN_LEFT_SHIFT, buildSpan(3));
+                        }
+                        yield new Operator(OperatorType.LEFT_SHIFT, buildSpan(2));
+                    } else if (peek(1) == '=') {
+                        yield new Operator(OperatorType.LESS_OR_EQUAL, buildSpan(2));
+                    }
+                }
+                yield new Operator(OperatorType.LESS_THAN, buildSpan(1));
+            }
+            case '>' -> {
+                if (hasMore(1)) {
+                    if (peek(1) == '>') {
+                        if (hasMore(2) && peek(2) == '=') {
+                            yield new Operator(OperatorType.ASSIGN_RIGHT_SHIFT, buildSpan(3));
+                        }
+                        yield new Operator(OperatorType.RIGHT_SHIFT, buildSpan(2));
+                    } else if (peek(1) == '=') {
+                        yield new Operator(OperatorType.GREATER_OR_EQUAL, buildSpan(2));
+                    }
+                }
+                yield new Operator(OperatorType.GREATER_THAN, buildSpan(1));
+            }
             default -> {
                 if (isIdentifierChar(peek())) {
                     if (isNumeric(peek())) {
@@ -140,9 +200,6 @@ public class Lexer {
         // This is a naive solution. Using a better data structure (hashmap, trie) likely performs better.
         for (KeywordType value : KeywordType.values()) {
             if (value.keyword().equals(id)) {
-                if (value == KeywordType.RETURN) {
-                    int x = 5;
-                }
                 return new Keyword(value, buildSpan(off));
             }
         }
