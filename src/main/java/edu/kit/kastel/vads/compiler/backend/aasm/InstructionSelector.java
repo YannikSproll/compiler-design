@@ -43,6 +43,7 @@ public class InstructionSelector {
 
         for (IrGraph graph : program) {
             instructionGenerator.generateEmptyLine()
+                    .generateComment("Method: " + graph.name(), false)
                     .generateLabel("_" + graph.name());
 
             LivenessAnalysis livenessAnalysis = new LivenessAnalysis();

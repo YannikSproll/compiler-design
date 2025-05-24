@@ -173,10 +173,20 @@ public class X86InstructionGenerator {
         return this;
     }
 
-
     public X86InstructionGenerator generateFromString(String instruction) {
         generateIndentationSpace();
         builder.append(instruction)
+                .append(NEW_LINE);
+        return this;
+    }
+
+    public X86InstructionGenerator generateComment(String comment, boolean generateIndentationSpace) {
+        if (generateIndentationSpace) {
+            generateIndentationSpace();
+        }
+
+        builder.append("# ")
+                .append(comment)
                 .append(NEW_LINE);
         return this;
     }

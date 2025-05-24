@@ -78,6 +78,10 @@ public final class DebugCodeGeneratorDecorator implements CodeGenerator {
         return codeGenerator.getX86InstructionGenerator();
     }
 
+    private void generateComment(Node node) {
+
+    }
+
     private void generateLineDebugging(Node node) {
         if (node.debugInfo() instanceof DebugInfo.SourceInfo(edu.kit.kastel.vads.compiler.Span span)) {
             getX86InstructionGenerator()
