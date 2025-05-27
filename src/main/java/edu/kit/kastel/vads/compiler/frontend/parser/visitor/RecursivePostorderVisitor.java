@@ -1,19 +1,6 @@
 package edu.kit.kastel.vads.compiler.frontend.parser.visitor;
 
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.AssignmentTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.BinaryOperationTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.BlockTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.DeclarationTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.FunctionTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.IdentExpressionTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.LValueIdentTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.LiteralTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.NameTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.NegateTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.ProgramTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.ReturnTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.StatementTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.TypeTree;
+import edu.kit.kastel.vads.compiler.frontend.parser.ast.*;
 
 /// A visitor that traverses a tree in postorder
 /// @param <T> a type for additional data
@@ -81,8 +68,18 @@ public class RecursivePostorderVisitor<T, R> implements Visitor<T, R> {
     }
 
     @Override
-    public R visit(LiteralTree literalTree, T data) {
-        return this.visitor.visit(literalTree, data);
+    public R visit(ConditionalExpressionTree conditionalExpressionTree, T data) {
+        return null;
+    }
+
+    @Override
+    public R visit(IntLiteralTree intLiteralTree, T data) {
+        return this.visitor.visit(intLiteralTree, data);
+    }
+
+    @Override
+    public R visit(BoolLiteralTree boolLiteralTree, T data) {
+        return null;
     }
 
     @Override
@@ -121,6 +118,36 @@ public class RecursivePostorderVisitor<T, R> implements Visitor<T, R> {
         R r = returnTree.expression().accept(this, data);
         r = this.visitor.visit(returnTree, accumulate(data, r));
         return r;
+    }
+
+    @Override
+    public R visit(BreakTree breakTree, T data) {
+        return null;
+    }
+
+    @Override
+    public R visit(ContinueTree continueTree, T data) {
+        return null;
+    }
+
+    @Override
+    public R visit(ForTree forTree, T data) {
+        return null;
+    }
+
+    @Override
+    public R visit(IfTree ifTree, T data) {
+        return null;
+    }
+
+    @Override
+    public R visit(ElseTree elseTree, T data) {
+        return null;
+    }
+
+    @Override
+    public R visit(WhileTree whileTree, T data) {
+        return null;
     }
 
     @Override

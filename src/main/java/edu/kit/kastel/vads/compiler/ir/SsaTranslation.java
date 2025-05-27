@@ -1,5 +1,6 @@
 package edu.kit.kastel.vads.compiler.ir;
 
+import edu.kit.kastel.vads.compiler.frontend.parser.ast.*;
 import edu.kit.kastel.vads.compiler.ir.node.Block;
 import edu.kit.kastel.vads.compiler.ir.node.DivNode;
 import edu.kit.kastel.vads.compiler.ir.node.ModNode;
@@ -7,21 +8,6 @@ import edu.kit.kastel.vads.compiler.ir.node.Node;
 import edu.kit.kastel.vads.compiler.ir.optimize.Optimizer;
 import edu.kit.kastel.vads.compiler.ir.util.DebugInfo;
 import edu.kit.kastel.vads.compiler.ir.util.DebugInfoHelper;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.AssignmentTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.BinaryOperationTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.BlockTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.DeclarationTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.FunctionTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.IdentExpressionTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.LValueIdentTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.LiteralTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.NameTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.NegateTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.ProgramTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.ReturnTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.StatementTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.Tree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.TypeTree;
 import edu.kit.kastel.vads.compiler.frontend.parser.symbol.Name;
 import edu.kit.kastel.vads.compiler.frontend.parser.visitor.Visitor;
 
@@ -169,11 +155,21 @@ public class SsaTranslation {
         }
 
         @Override
-        public Optional<Node> visit(LiteralTree literalTree, SsaTranslation data) {
-            pushSpan(literalTree);
-            Node node = data.constructor.newConstInt((int) literalTree.parseValue().orElseThrow());
+        public Optional<Node> visit(ConditionalExpressionTree conditionalExpressionTree, SsaTranslation data) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<Node> visit(IntLiteralTree intLiteralTree, SsaTranslation data) {
+            pushSpan(intLiteralTree);
+            Node node = data.constructor.newConstInt((int) intLiteralTree.parseValue().orElseThrow());
             popSpan();
             return Optional.of(node);
+        }
+
+        @Override
+        public Optional<Node> visit(BoolLiteralTree boolLiteralTree, SsaTranslation data) {
+            return Optional.empty();
         }
 
         @Override
@@ -208,6 +204,36 @@ public class SsaTranslation {
             data.constructor.graph().endBlock().addPredecessor(ret);
             popSpan();
             return NOT_AN_EXPRESSION;
+        }
+
+        @Override
+        public Optional<Node> visit(BreakTree breakTree, SsaTranslation data) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<Node> visit(ContinueTree continueTree, SsaTranslation data) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<Node> visit(ForTree forTree, SsaTranslation data) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<Node> visit(IfTree ifTree, SsaTranslation data) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<Node> visit(ElseTree elseTree, SsaTranslation data) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<Node> visit(WhileTree whileTree, SsaTranslation data) {
+            return Optional.empty();
         }
 
         @Override

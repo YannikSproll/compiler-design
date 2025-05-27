@@ -1,23 +1,6 @@
 package edu.kit.kastel.vads.compiler.frontend.parser;
 
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.AssignmentTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.BinaryOperationTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.BlockTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.IdentExpressionTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.LValueIdentTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.LiteralTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.NameTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.NegateTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.ReturnTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.Tree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.DeclarationTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.FunctionTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.ProgramTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.StatementTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.TypeTree;
-
-import java.util.List;
-
+/*
 /// This is a utility class to help with debugging the parser.
 public class Printer {
 
@@ -136,3 +119,4 @@ public class Printer {
     }
 
 }
+*/

@@ -102,6 +102,8 @@ public class Lexer {
                 }
                 yield new Operator(OperatorType.GREATER_THAN, buildSpan(1));
             }
+            case '?' -> new Operator(OperatorType.QUESTION, buildSpan(1));
+            case ':' -> new Operator(OperatorType.TERNARY, buildSpan(1));
             default -> {
                 if (isIdentifierChar(peek())) {
                     if (isNumeric(peek())) {

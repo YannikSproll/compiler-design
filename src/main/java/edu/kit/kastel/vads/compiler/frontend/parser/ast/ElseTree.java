@@ -1,13 +1,14 @@
 package edu.kit.kastel.vads.compiler.frontend.parser.ast;
 
-import edu.kit.kastel.vads.compiler.frontend.lexer.Operator;
+import edu.kit.kastel.vads.compiler.Position;
 import edu.kit.kastel.vads.compiler.Span;
 import edu.kit.kastel.vads.compiler.frontend.parser.visitor.Visitor;
 
-public record AssignmentTree(LValueTree lValue, Operator operator, ExpressionTree expression) implements SimpleStatementTree {
+public record ElseTree(StatementTree statementTree, Position start) implements ControlTree {
+
     @Override
     public Span span() {
-        return lValue().span().merge(expression().span());
+        return new Span.SimpleSpan(start, statementTree.span().end());
     }
 
     @Override

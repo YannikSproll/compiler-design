@@ -10,8 +10,10 @@ import edu.kit.kastel.vads.compiler.frontend.lexer.Separator;
 import edu.kit.kastel.vads.compiler.frontend.lexer.Separator.SeparatorType;
 import edu.kit.kastel.vads.compiler.frontend.lexer.Token;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class TokenSource {
@@ -38,6 +40,18 @@ public class TokenSource {
         Token token = peek();
         if (!(token instanceof Keyword kw) || kw.type() != type) {
             throw new ParseException("expected keyword '" + type + "' but got " + token);
+        }
+        this.idx++;
+        return kw;
+    }
+
+    public Keyword expectKeywords(KeywordType... types) {
+        Token token = peek();
+        if (!(token instanceof Keyword kw) || Arrays.stream(types).noneMatch(x -> kw.type() == x)) {
+            throw new ParseException("expected one of the keywords '"
+                    + Arrays.stream(types).map(KeywordType::toString).collect(Collectors.joining())
+                    + "' but got "
+                    + token);
         }
         this.idx++;
         return kw;
