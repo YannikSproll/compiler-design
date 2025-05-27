@@ -259,10 +259,11 @@ public class Parser {
             if (!(next instanceof Operator(OperatorType type, _)) || type == OperatorType.TERNARY)
                 break;
 
-            if (type == OperatorType.QUESTION) {
-                if (type.precedenceLevel() < minPrecedenceLevel)
-                    break;
+            // If next operator has lower precedence level (is less tight binding) then don't continue
+            if (type.precedenceLevel() < minPrecedenceLevel)
+                break;
 
+            if (type == OperatorType.QUESTION) {
                 this.tokenSource.consume();
                 ExpressionTree thenExpression = parseExpression(0);
 
@@ -275,9 +276,6 @@ public class Parser {
                         elseExpression,
                         lhs.span().merge(elseExpression.span()));
             } else {
-                if (type.precedenceLevel() < minPrecedenceLevel)
-                    break;
-
                 this.tokenSource.consume();
 
                 int nextMinPrecedenceLevel = type.associativity() == Operator.OperatorAssociativity.LEFT
@@ -301,6 +299,14 @@ public class Parser {
                 yield expression;
             }
             case Operator(var type, _) when type == OperatorType.MINUS -> {
+                Span span = this.tokenSource.consume().span();
+                yield new NegateTree(parseFactor(), span);
+            }
+            case Operator(var type, _) when type == OperatorType.BITWISE_NOT -> {
+                Span span = this.tokenSource.consume().span();
+                yield new NegateTree(parseFactor(), span);
+            }
+            case Operator(var type, _) when type == OperatorType.LOGICAL_NOT -> {
                 Span span = this.tokenSource.consume().span();
                 yield new NegateTree(parseFactor(), span);
             }
