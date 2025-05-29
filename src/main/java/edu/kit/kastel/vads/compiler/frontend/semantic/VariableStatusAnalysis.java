@@ -78,46 +78,6 @@ class VariableStatusAnalysis implements NoOpVisitor<Namespace<VariableStatusAnal
         return NoOpVisitor.super.visit(identExpressionTree, data);
     }
 
-    @Override
-    public Unit visit(ConditionalExpressionTree conditionalExpressionTree, Namespace<VariableStatus> data) {
-        return null;
-    }
-
-    @Override
-    public Unit visit(BoolLiteralTree boolLiteralTree, Namespace<VariableStatus> data) {
-        return null;
-    }
-
-    @Override
-    public Unit visit(BreakTree breakTree, Namespace<VariableStatus> data) {
-        return null;
-    }
-
-    @Override
-    public Unit visit(ContinueTree continueTree, Namespace<VariableStatus> data) {
-        return null;
-    }
-
-    @Override
-    public Unit visit(ForTree forTree, Namespace<VariableStatus> data) {
-        return null;
-    }
-
-    @Override
-    public Unit visit(IfTree ifTree, Namespace<VariableStatus> data) {
-        return null;
-    }
-
-    @Override
-    public Unit visit(ElseTree elseTree, Namespace<VariableStatus> data) {
-        return null;
-    }
-
-    @Override
-    public Unit visit(WhileTree whileTree, Namespace<VariableStatus> data) {
-        return null;
-    }
-
     enum VariableStatus {
         DECLARED,
         INITIALIZED;

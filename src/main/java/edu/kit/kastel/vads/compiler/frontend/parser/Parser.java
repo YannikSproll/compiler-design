@@ -211,6 +211,7 @@ public class Parser {
             this.tokenSource.expectOperator(OperatorType.ASSIGN);
             expr = parseExpression();
         }
+        // TODO: Also return bool as type
         return new DeclarationTree(new TypeTree(BasicType.INT, type.span()), name(ident), expr);
     }
 

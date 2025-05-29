@@ -1,18 +1,7 @@
 package edu.kit.kastel.vads.compiler.frontend.parser.visitor;
 
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.AssignmentTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.BinaryOperationTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.BlockTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.DeclarationTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.FunctionTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.IdentExpressionTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.LValueIdentTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.IntLiteralTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.NameTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.NegateTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.ProgramTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.ReturnTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.ast.TypeTree;
+import edu.kit.kastel.vads.compiler.frontend.parser.ast.*;
+import edu.kit.kastel.vads.compiler.frontend.semantic.Namespace;
 
 /// A visitor that does nothing and returns [Unit#INSTANCE] by default.
 /// This can be used to implement operations only for specific tree types.
@@ -49,9 +38,7 @@ public interface NoOpVisitor<T> extends Visitor<T, Unit> {
     }
 
     @Override
-    default Unit visit(IntLiteralTree intLiteralTree, T data) {
-        return Unit.INSTANCE;
-    }
+    default Unit visit(IntLiteralTree intLiteralTree, T data) { return Unit.INSTANCE; }
 
     @Override
     default Unit visit(LValueIdentTree lValueIdentTree, T data) {
@@ -59,9 +46,7 @@ public interface NoOpVisitor<T> extends Visitor<T, Unit> {
     }
 
     @Override
-    default Unit visit(NameTree nameTree, T data) {
-        return Unit.INSTANCE;
-    }
+    default Unit visit(NameTree nameTree, T data) { return Unit.INSTANCE; }
 
     @Override
     default Unit visit(NegateTree negateTree, T data) {
@@ -79,7 +64,43 @@ public interface NoOpVisitor<T> extends Visitor<T, Unit> {
     }
 
     @Override
-    default Unit visit(TypeTree typeTree, T data) {
+    default Unit visit(TypeTree typeTree, T data) { return Unit.INSTANCE; }
+
+    @Override
+    default Unit visit(ConditionalExpressionTree conditionalExpressionTree, T data) { return Unit.INSTANCE; }
+
+    @Override
+    default Unit visit(BoolLiteralTree boolLiteralTree, T data) {
+        return Unit.INSTANCE;
+    }
+
+    @Override
+    default Unit visit(BreakTree breakTree, T data) {
+        return Unit.INSTANCE;
+    }
+
+    @Override
+    default Unit visit(ContinueTree continueTree, T data) {
+        return Unit.INSTANCE;
+    }
+
+    @Override
+    default Unit visit(ForTree forTree, T data) {
+        return Unit.INSTANCE;
+    }
+
+    @Override
+    default Unit visit(IfTree ifTree, T data) {
+        return Unit.INSTANCE;
+    }
+
+    @Override
+    default Unit visit(ElseTree elseTree, T data) {
+        return Unit.INSTANCE;
+    }
+
+    @Override
+    default Unit visit(WhileTree whileTree, T data) {
         return Unit.INSTANCE;
     }
 }
