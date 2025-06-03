@@ -1,5 +1,6 @@
 package edu.kit.kastel.vads.compiler.frontend.semantic;
 
+import edu.kit.kastel.vads.compiler.frontend.lexer.Operator;
 import edu.kit.kastel.vads.compiler.frontend.parser.ast.*;
 import edu.kit.kastel.vads.compiler.frontend.parser.type.BasicType;
 import edu.kit.kastel.vads.compiler.frontend.parser.visitor.Visitor;
@@ -32,34 +33,177 @@ public class Elaborator implements
         ElaborationResult lValueResult = assignmentTree.lValue().accept(this, context);
         ElaborationResult expressionResult = assignmentTree.expression().accept(this, context);
 
-        //TODO: Handle assignment operators
         Symbol lValueSymbol = lValueResult.lvalue().asVariable().symbol();
 
+        return switch (assignmentTree.operator().type()) {
+            case Operator.OperatorType.ASSIGN:  {
+                if (!lValueSymbol.isAssigned()) {
+                    lValueSymbol.markAsAssigned(assignmentTree.span());
+                }
 
-        if (!lValueSymbol.isAssigned()) {
-            lValueSymbol.markAsAssigned(assignmentTree.span());
-        }
+                TypedAssignment assignment = new TypedAssignment(
+                        lValueResult.lvalue(),
+                        expressionResult.expression(),
+                        assignmentTree.span());
+                yield ElaborationResult.statement(assignment);
+            }
+            case Operator.OperatorType.ASSIGN_PLUS,
+                 Operator.OperatorType.ASSIGN_MINUS,
+                 Operator.OperatorType.ASSIGN_MUL,
+                 Operator.OperatorType.ASSIGN_DIV,
+                 Operator.OperatorType.ASSIGN_MOD,
+                 Operator.OperatorType.ASSIGN_BITWISE_AND,
+                 Operator.OperatorType.ASSIGN_BITWISE_OR,
+                 Operator.OperatorType.ASSIGN_BITWISE_XOR,
+                 Operator.OperatorType.ASSIGN_LEFT_SHIFT,
+                 Operator.OperatorType.ASSIGN_RIGHT_SHIFT:{
+                if (!lValueSymbol.isAssigned()) {
+                    throw new SemanticException("Variable " + lValueSymbol + " must be assigned before using it.");
+                }
 
-        TypedAssignment assignment = new TypedAssignment(
-                lValueResult.lvalue(),
-                expressionResult.expression(),
-                assignmentTree.span());
-        return ElaborationResult.statement(assignment);
+                TypedAssignment assignment = new TypedAssignment(
+                        lValueResult.lvalue(),
+                        new TypedBinaryOperation(
+                                HirType.INT,
+                                mapAssignmentOperationToBinaryOperator(assignmentTree.operator()),
+                                lValueResult.lvalue().asVariable(),
+                                expressionResult.expression(),
+                                assignmentTree.span()),
+                        assignmentTree.span());
+
+                yield ElaborationResult.statement(assignment);
+            }
+            default: {
+                throw new IllegalStateException("Unexpected operator type: " + assignmentTree.operator().type());
+            }
+        };
+    }
+
+    private static BinaryOperator mapAssignmentOperationToBinaryOperator(Operator operator) {
+        return switch (operator.type()) {
+            case Operator.OperatorType.ASSIGN_PLUS -> BinaryOperator.ADD;
+            case Operator.OperatorType.ASSIGN_MINUS -> BinaryOperator.SUBTRACT;
+            case Operator.OperatorType.ASSIGN_MUL -> BinaryOperator.MULTIPLY;
+            case Operator.OperatorType.ASSIGN_DIV -> BinaryOperator.DIVIDE;
+            case Operator.OperatorType.ASSIGN_MOD -> BinaryOperator.MODULO;
+            case Operator.OperatorType.ASSIGN_BITWISE_AND -> BinaryOperator.BITWISE_AND;
+            case Operator.OperatorType.ASSIGN_BITWISE_OR -> BinaryOperator.BITWISE_OR;
+            case Operator.OperatorType.ASSIGN_BITWISE_XOR -> BinaryOperator.BITWISE_XOR;
+            case Operator.OperatorType.ASSIGN_LEFT_SHIFT -> BinaryOperator.LEFT_SHIFT;
+            case Operator.OperatorType.ASSIGN_RIGHT_SHIFT -> BinaryOperator.RIGHT_SHIFT;
+            default -> throw new IllegalStateException("Unexpected operator type: " + operator.type());
+        };
+    }
+
+    private static BinaryOperator mapBinaryOperator(Operator.OperatorType operatorType) {
+        return switch (operatorType) {
+            case Operator.OperatorType.MUL -> BinaryOperator.MULTIPLY;
+            case Operator.OperatorType.DIV -> BinaryOperator.DIVIDE;
+            case Operator.OperatorType.MOD -> BinaryOperator.MODULO;
+            case Operator.OperatorType.MINUS -> BinaryOperator.SUBTRACT;
+            case Operator.OperatorType.PLUS -> BinaryOperator.ADD;
+            case Operator.OperatorType.LEFT_SHIFT -> BinaryOperator.LEFT_SHIFT;
+            case Operator.OperatorType.RIGHT_SHIFT -> BinaryOperator.RIGHT_SHIFT;
+            case Operator.OperatorType.LESS_THAN -> BinaryOperator.LESS_THAN;
+            case Operator.OperatorType.GREATER_THAN -> BinaryOperator.GREATER_THAN;
+            case Operator.OperatorType.LESS_OR_EQUAL -> BinaryOperator.LESS_THAN_OR_EQUAL_TO;
+            case Operator.OperatorType.GREATER_OR_EQUAL -> BinaryOperator.GREATER_THAN_OR_EQUAL_TO;
+            case Operator.OperatorType.EQUAL_TO -> BinaryOperator.EQUAL_TO;
+            case Operator.OperatorType.UNEQUAL_TO -> BinaryOperator.UNEQUAL_TO;
+            case Operator.OperatorType.BITWISE_AND -> BinaryOperator.BITWISE_AND;
+            case Operator.OperatorType.BITWISE_XOR -> BinaryOperator.BITWISE_XOR;
+            case Operator.OperatorType.BITWISE_OR -> BinaryOperator.BITWISE_OR;
+            case Operator.OperatorType.LOGICAL_AND -> BinaryOperator.LOGICAL_AND;
+            case Operator.OperatorType.LOGICAL_OR -> BinaryOperator.LOGICAL_OR;
+            default -> throw new IllegalStateException("Unexpected operator type: " + operatorType);
+        };
     }
 
     @Override
     public ElaborationResult visit(BinaryOperationTree binaryOperationTree, ElaborationContext context) {
         ElaborationResult lhsResult = binaryOperationTree.lhs().accept(this, context);
-
         ElaborationResult rhsResult = binaryOperationTree.rhs().accept(this, context);
 
-        //TODO: Check types
-        TypedBinaryOperation typedBinaryOperation = new TypedBinaryOperation(
-                HirType.INT,
-                lhsResult.expression(),
-                rhsResult.expression(),
-                binaryOperationTree.span());
-        return ElaborationResult.expression(typedBinaryOperation);
+        BinaryOperator binaryOperator = mapBinaryOperator(binaryOperationTree.operatorType());
+        TypedExpression resultExpression = switch (binaryOperator) {
+            case ADD,
+                 SUBTRACT,
+                 MULTIPLY,
+                 DIVIDE,
+                 MODULO,
+                 LEFT_SHIFT,
+                 RIGHT_SHIFT,
+                 BITWISE_OR,
+                 BITWISE_AND,
+                 BITWISE_XOR -> {
+
+                if (lhsResult.expression().type() != HirType.INT
+                    || rhsResult.expression().type() != HirType.INT) {
+                    throw new IllegalStateException("Unexpected expression type: " + lhsResult.expression().type());
+                }
+
+                yield new TypedBinaryOperation(
+                        lhsResult.expression().type(),
+                        mapBinaryOperator(binaryOperationTree.operatorType()),
+                        lhsResult.expression(),
+                        rhsResult.expression(),
+                        binaryOperationTree.span());
+            }
+            case EQUAL_TO, UNEQUAL_TO -> {
+                if (lhsResult.expression().type() != rhsResult.expression().type()) {
+                    throw new IllegalStateException("Unexpected expression type: " + lhsResult.expression().type());
+                }
+                yield new TypedBinaryOperation(
+                        HirType.BOOLEAN,
+                        mapBinaryOperator(binaryOperationTree.operatorType()),
+                        lhsResult.expression(),
+                        rhsResult.expression(),
+                        binaryOperationTree.span());
+            }
+            case GREATER_THAN,
+                 LESS_THAN,
+                 GREATER_THAN_OR_EQUAL_TO,
+                 LESS_THAN_OR_EQUAL_TO -> {
+                if (lhsResult.expression().type() != HirType.INT
+                        || rhsResult.expression().type() != HirType.INT) {
+                    throw new IllegalStateException("Unexpected expression type: " + lhsResult.expression().type());
+                }
+                yield new TypedBinaryOperation(
+                        HirType.BOOLEAN,
+                        mapBinaryOperator(binaryOperationTree.operatorType()),
+                        lhsResult.expression(),
+                        rhsResult.expression(),
+                        binaryOperationTree.span());
+            }
+            case LOGICAL_AND -> {
+                if (lhsResult.expression().type() != HirType.BOOLEAN
+                        || rhsResult.expression().type() != HirType.BOOLEAN) {
+                    throw new IllegalStateException("Unexpected expression type: " + lhsResult.expression().type());
+                }
+
+                yield new TypedConditionalExpression(
+                        HirType.BOOLEAN,
+                        lhsResult.expression(),
+                        rhsResult.expression(),
+                        new TypedBoolLiteral(false, HirType.BOOLEAN, binaryOperationTree.span()),
+                        binaryOperationTree.span());
+            }
+            case LOGICAL_OR -> {
+                if (lhsResult.expression().type() != HirType.BOOLEAN
+                        || rhsResult.expression().type() != HirType.BOOLEAN) {
+                    throw new IllegalStateException("Unexpected expression type: " + lhsResult.expression().type());
+                }
+
+                yield new TypedConditionalExpression(
+                        HirType.BOOLEAN,
+                        lhsResult.expression(),
+                        new TypedBoolLiteral(true, HirType.BOOLEAN, binaryOperationTree.span()),
+                        rhsResult.expression(),
+                        binaryOperationTree.span());
+            }
+        };
+
+        return ElaborationResult.expression(resultExpression);
     }
 
     @Override
@@ -149,8 +293,18 @@ public class Elaborator implements
         ElaborationResult thenExpResult = conditionalExpressionTree.thenTree().accept(this, context);
         ElaborationResult elseExpResult = conditionalExpressionTree.elseTree().accept(this,context);
 
+        if (conditionResult.expression().type() != HirType.BOOLEAN) {
+            throw new SemanticException("Conditions must have boolean type");
+        }
+
+        if (thenExpResult.expression().type() != elseExpResult.expression().type()) {
+            throw new SemanticException("The expression at"
+                    + thenExpResult.expression().span() + " and at "
+                    + elseExpResult.expression().span() + " are not of the same type.");
+        }
+
         TypedConditionalExpression typedConditionalExpression = new TypedConditionalExpression(
-                HirType.INT,
+                thenExpResult.expression().type(), // Is the same as for elseExpResult because it is checked above
                 conditionResult.expression(),
                 thenExpResult.expression(),
                 elseExpResult.expression(),
@@ -163,7 +317,6 @@ public class Elaborator implements
         OptionalLong value = intLiteralTree.parseValue();
         if (value.isEmpty()) {
             // Not valid int range value.
-            // Todo: Create error or warning
             throw new SemanticException("invalid integer literal " + intLiteralTree.value());
         }
 
@@ -179,7 +332,7 @@ public class Elaborator implements
     public ElaborationResult visit(BoolLiteralTree boolLiteralTree, ElaborationContext context) {
         TypedBoolLiteral typedBoolLiteral = new TypedBoolLiteral(
                 boolLiteralTree.value(),
-                HirType.INVALID,
+                HirType.BOOLEAN,
                 boolLiteralTree.span());
         return ElaborationResult.expression(typedBoolLiteral);
     }
@@ -206,11 +359,47 @@ public class Elaborator implements
     public ElaborationResult visit(NegateTree negateTree, ElaborationContext context) {
         TypedExpression typedExpression = negateTree.expression().accept(this, context)
                 .expression();
-        TypedUnaryOperation typedUnaryOperation = new TypedUnaryOperation(
-                UnaryOperator.NEGATION,
-                typedExpression,
-                negateTree.span());
+
+        TypedUnaryOperation typedUnaryOperation = null;
+         switch (negateTree.operatorType()) {
+             case Operator.OperatorType.MINUS,
+                  Operator.OperatorType.BITWISE_NOT: {
+
+                 if (typedExpression.type() != HirType.BOOLEAN) {
+                     throw new SemanticException("The unary operator " + negateTree.operatorType() + " requires an integer expression.");
+                 }
+
+                  typedUnaryOperation = new TypedUnaryOperation(
+                        mapUnaryOperator(negateTree.operatorType()),
+                        typedExpression,
+                        negateTree.span());
+                  break;
+            }
+            case Operator.OperatorType.LOGICAL_NOT: {
+
+                if (typedExpression.type() != HirType.BOOLEAN) {
+                    throw new SemanticException("The unary operator " + negateTree.operatorType() + " requires a bool expression.");
+                }
+
+                 typedUnaryOperation = new TypedUnaryOperation(
+                        UnaryOperator.LOGICAL_NOT,
+                        typedExpression,
+                        negateTree.span());
+                break;
+            }
+             default: throw new SemanticException("Unsupported expression type: " + typedExpression.type());
+        };
+
         return ElaborationResult.expression(typedUnaryOperation);
+    }
+
+    private static UnaryOperator mapUnaryOperator(Operator.OperatorType operatorType) {
+        return switch (operatorType) {
+            case Operator.OperatorType.MINUS -> UnaryOperator.NEGATION;
+            case Operator.OperatorType.BITWISE_NOT -> UnaryOperator.BITWISE_NOT;
+            case Operator.OperatorType.LOGICAL_NOT -> UnaryOperator.LOGICAL_NOT;
+            default -> throw new SemanticException("Unsupported operator type: " + operatorType);
+        };
     }
 
     @Override

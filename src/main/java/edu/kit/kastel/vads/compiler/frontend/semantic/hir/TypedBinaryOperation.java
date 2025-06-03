@@ -4,6 +4,7 @@ import edu.kit.kastel.vads.compiler.Span;
 
 public record TypedBinaryOperation(
         HirType type,
+        BinaryOperator operator,
         TypedExpression lhsExpression,
         TypedExpression rhsExpression,
         Span span) implements TypedExpression {
