@@ -13,6 +13,16 @@ public class SymbolTable {
         return scopes.peek();
     }
 
+    public void putType(String name, Symbol symbol) { getCurrentScope().putType(name, symbol); }
+
+    public boolean isVariableDeclared(String name) {
+        return getCurrentScope().isVariableDeclared(name);
+    }
+
+    public Symbol typeOf(String name) {
+        return getCurrentScope().typeOf(name);
+    }
+
     public void enterScope() {
         if (!scopes.isEmpty()) {
             scopes.push(new Scope(scopes.peek()));

@@ -18,8 +18,13 @@ public class Scope {
         this.typesOfVariables = new HashMap<>();
         this.parent = Optional.of(parent);
     }
+
     public void putType(String name, Symbol symbol) {typesOfVariables.put(name, symbol);}
 
+    public boolean isVariableDeclared(String name) {
+        return typesOfVariables.containsKey(name)
+                || parent.isPresent() && parent.get().isVariableDeclared(name);
+    }
 
     public Symbol typeOf(String name) {
         boolean containsType = typesOfVariables.containsKey(name);

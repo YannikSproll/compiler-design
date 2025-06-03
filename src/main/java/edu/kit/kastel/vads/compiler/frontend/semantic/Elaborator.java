@@ -1,9 +1,7 @@
 package edu.kit.kastel.vads.compiler.frontend.semantic;
 
-import edu.kit.kastel.vads.compiler.Span;
 import edu.kit.kastel.vads.compiler.frontend.parser.ast.*;
 import edu.kit.kastel.vads.compiler.frontend.parser.type.BasicType;
-import edu.kit.kastel.vads.compiler.frontend.parser.type.Type;
 import edu.kit.kastel.vads.compiler.frontend.parser.visitor.Visitor;
 import edu.kit.kastel.vads.compiler.frontend.semantic.hir.*;
 
@@ -11,7 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
-import java.util.stream.Collectors;
 
 public class Elaborator implements
         Visitor<ElaborationContext, ElaborationResult> {
@@ -32,11 +29,19 @@ public class Elaborator implements
 
     @Override
     public ElaborationResult visit(AssignmentTree assignmentTree, ElaborationContext context) {
-        ElaborationResult result = assignmentTree.lValue().accept(this, context);
+        ElaborationResult lValueResult = assignmentTree.lValue().accept(this, context);
         ElaborationResult expressionResult = assignmentTree.expression().accept(this, context);
 
+        //TODO: Handle assignment operators
+        Symbol lValueSymbol = lValueResult.lvalue().asVariable().symbol();
+
+
+        if (!lValueSymbol.isAssigned()) {
+            lValueSymbol.markAsAssigned(assignmentTree.span());
+        }
+
         TypedAssignment assignment = new TypedAssignment(
-                result.lvalue(),
+                lValueResult.lvalue(),
                 expressionResult.expression(),
                 assignmentTree.span());
         return ElaborationResult.statement(assignment);
@@ -78,6 +83,11 @@ public class Elaborator implements
         ElaborationResult typeResult = declarationTree.type().accept(this, context);
         ElaborationResult nameResult = declarationTree.name().accept(this, context);
 
+        if (context.symbolTable().isVariableDeclared(nameResult.name())) {
+            throw new SemanticException("The variable " + nameResult.name() + " is already declared.");
+        }
+
+
         Optional<TypedExpression> typedInitializer = Optional.empty();
         if (declarationTree.initializer() != null) {
             ElaborationResult initializerResult = declarationTree.initializer().accept(this, context);
@@ -85,7 +95,11 @@ public class Elaborator implements
             typedInitializer = Optional.of(initializerResult.expression());
         }
 
-        Symbol declaredVariableSymbol = new Symbol(nameResult.name(), typeResult.type(), declarationTree.span());
+        Symbol declaredVariableSymbol = new Symbol(
+                nameResult.name(),
+                typeResult.type(),
+                declarationTree.span(),
+                declarationTree.initializer() != null ? Optional.of(declarationTree.span()) : Optional.empty());
         context.symbolTable().getCurrentScope().putType(nameResult.name(), declaredVariableSymbol);
 
         TypedDeclaration typedDeclaration = new TypedDeclaration(
@@ -106,7 +120,11 @@ public class Elaborator implements
 
         context.symbolTable().exitScope();
 
-        Symbol functionSymbol = new Symbol(nameResult.name(), returnTypeResult.type(), functionTree.span());
+        Symbol functionSymbol = new Symbol(
+                nameResult.name(),
+                returnTypeResult.type(),
+                functionTree.span(),
+                Optional.empty());
         TypedFunction typedFunction = new TypedFunction(functionSymbol, bodyResult.block());
         return ElaborationResult.node(typedFunction);
     }
@@ -116,6 +134,11 @@ public class Elaborator implements
         ElaborationResult nameResult = identExpressionTree.name().accept(this, context);
 
         Symbol variableSymbol = context.symbolTable().getCurrentScope().typeOf(nameResult.name());
+
+        if (!variableSymbol.isAssigned()) {
+            throw new SemanticException("Variable " + nameResult.name() + " can not be used before it is assigned.");
+        }
+
         TypedVariable typedVariable = new TypedVariable(variableSymbol, identExpressionTree.span());
         return ElaborationResult.expression(typedVariable);
     }
@@ -163,9 +186,11 @@ public class Elaborator implements
 
     @Override
     public ElaborationResult visit(LValueIdentTree lValueIdentTree, ElaborationContext context) {
-
         ElaborationResult nameResult = lValueIdentTree.name().accept(this, context);
 
+        if (!context.symbolTable().isVariableDeclared(nameResult.name())) {
+            throw new SemanticException("Variable " + nameResult.name() + " can not be used before it is declared.");
+        }
         Symbol variableSymbol = context.symbolTable().getCurrentScope().typeOf(nameResult.name());
 
         TypedVariable typedVariable = new TypedVariable(variableSymbol, lValueIdentTree.span());
