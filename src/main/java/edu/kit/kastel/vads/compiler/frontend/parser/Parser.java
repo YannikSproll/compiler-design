@@ -211,8 +211,13 @@ public class Parser {
             this.tokenSource.expectOperator(OperatorType.ASSIGN);
             expr = parseExpression();
         }
-        // TODO: Also return bool as type
-        return new DeclarationTree(new TypeTree(BasicType.INT, type.span()), name(ident), expr);
+
+        TypeTree typeTree = switch (type.type()) {
+            case KeywordType.INT -> new TypeTree(BasicType.INT, type.span());
+            case KeywordType.BOOL -> new TypeTree(BasicType.BOOL, type.span());
+            default -> throw new IllegalStateException("Unexpected value: " + type);
+        };
+        return new DeclarationTree(typeTree, name(ident), expr);
     }
 
     private SimpleStatementTree parseAssignment() {

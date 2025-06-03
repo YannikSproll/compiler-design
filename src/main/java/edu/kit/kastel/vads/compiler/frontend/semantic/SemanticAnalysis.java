@@ -1,6 +1,7 @@
 package edu.kit.kastel.vads.compiler.frontend.semantic;
 
 import edu.kit.kastel.vads.compiler.frontend.parser.ast.ProgramTree;
+import edu.kit.kastel.vads.compiler.frontend.parser.visitor.RecursivePostorderPreVisitor;
 import edu.kit.kastel.vads.compiler.frontend.parser.visitor.RecursivePostorderVisitor;
 
 public class SemanticAnalysis {
@@ -15,6 +16,9 @@ public class SemanticAnalysis {
         this.program.accept(new RecursivePostorderVisitor<>(new IntegerLiteralRangeAnalysis()), new Namespace<>());
         this.program.accept(new RecursivePostorderVisitor<>(new VariableStatusAnalysis()), new Namespace<>());
         this.program.accept(new RecursivePostorderVisitor<>(new ReturnAnalysis()), new ReturnAnalysis.ReturnState());
+        Elaborator elaborator = new Elaborator();
+        elaborator.elaborate(program);
+        //this.program.accept(new RecursivePostorderPreVisitor<>(new TypeCheckingAnalysis()), new TypeCheckingAnalysis.ScopeStack());
     }
 
 }

@@ -1,6 +1,7 @@
 package edu.kit.kastel.vads.compiler.frontend.parser.ast;
 
 import edu.kit.kastel.vads.compiler.Span;
+import edu.kit.kastel.vads.compiler.frontend.parser.visitor.PreVisitor;
 import edu.kit.kastel.vads.compiler.frontend.parser.visitor.Visitor;
 import org.jspecify.annotations.Nullable;
 
@@ -16,5 +17,10 @@ public record DeclarationTree(TypeTree type, NameTree name, @Nullable Expression
     @Override
     public <T, R> R accept(Visitor<T, R> visitor, T data) {
         return visitor.visit(this, data);
+    }
+
+    @Override
+    public <T> void accept(PreVisitor<T> visitor, T data) {
+        visitor.preVisit(this, data);
     }
 }
