@@ -13,4 +13,8 @@ public record TypedConditionalExpression(
     public TypedConditionalExpression asConditionalExpression() {
         return this;
     }
+
+    public <TContext> void accept(TypedVisitor<TContext> visitor, TContext context) {
+        visitor.visit(this, context);
+    }
 }

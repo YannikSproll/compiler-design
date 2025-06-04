@@ -8,4 +8,8 @@ public record TypedIntLiteral(int value, HirType type, Span span) implements Typ
     public TypedIntLiteral asIntLiteral() {
         return this;
     }
+
+    public <TContext> void accept(TypedVisitor<TContext> visitor, TContext context) {
+        visitor.visit(this, context);
+    }
 }

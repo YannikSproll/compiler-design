@@ -13,4 +13,8 @@ public record TypedBinaryOperation(
     public TypedBinaryOperation asBinaryOperation() {
         return this;
     }
+
+    public <TContext> void accept(TypedVisitor<TContext> visitor, TContext context) {
+        visitor.visit(this, context);
+    }
 }

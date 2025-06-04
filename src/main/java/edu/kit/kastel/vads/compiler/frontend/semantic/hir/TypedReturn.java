@@ -7,4 +7,8 @@ public record TypedReturn(TypedExpression returnExpression, Span span) implement
     public TypedReturn asReturn() {
         return this;
     }
+
+    public <TContext> void accept(TypedVisitor<TContext> visitor, TContext context) {
+        visitor.visit(this, context);
+    }
 }

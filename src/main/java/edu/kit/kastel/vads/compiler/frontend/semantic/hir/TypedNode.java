@@ -9,4 +9,6 @@ public sealed interface TypedNode permits TypedFile, TypedFunction {
     default TypedFunction asTypedFunction() {
         throw new UnsupportedOperationException("Node is not a function");
     }
+
+    <TContext> void accept(TypedVisitor<TContext> visitor, TContext context);
 }

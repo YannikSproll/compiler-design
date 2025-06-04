@@ -9,4 +9,8 @@ public record TypedBlock(List<TypedStatement> statements, Span span) implements 
     public TypedBlock asBlock() {
         return this;
     }
+
+    public <TContext> void accept(TypedVisitor<TContext> visitor, TContext context) {
+        visitor.visit(this, context);
+    }
 }

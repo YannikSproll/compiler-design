@@ -28,4 +28,6 @@ public sealed interface TypedStatement permits TypedAssignment, TypedBlock, Type
     default TypedDeclaration asDeclaration() { throw new UnsupportedOperationException("Statement is not a declaration"); }
 
     default TypedBreak asBreak() { throw new UnsupportedOperationException("Statement is not a break"); }
+
+    <TContext> void accept(TypedVisitor<TContext> visitor, TContext context);
 }

@@ -13,4 +13,8 @@ public record TypedIf(
     public TypedIf AsIf() {
         return this;
     }
+
+    public <TContext> void accept(TypedVisitor<TContext> visitor, TContext context) {
+        visitor.visit(this, context);
+    }
 }

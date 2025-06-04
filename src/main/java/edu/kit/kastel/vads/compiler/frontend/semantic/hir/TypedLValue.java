@@ -9,4 +9,6 @@ public sealed interface TypedLValue permits TypedVariable {
     default TypedVariable asVariable() {
         throw new UnsupportedOperationException("Expression is not a variable");
     }
+
+    <TContext> void accept(TypedVisitor<TContext> visitor, TContext context);
 }

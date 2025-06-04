@@ -472,15 +472,10 @@ public class Elaborator implements
 
         TypedLoop typedLoop = new TypedLoop(
                 new TypedBlock(
-                        stepResult != null
-                                ? List.of(
-                                    generateLoopBreakIf(conditionResult.expression()),
-                                    bodyElaborationResult.block(),
-                                    stepResult.statement())
-                                : List.of(
-                                    generateLoopBreakIf(conditionResult.expression()),
-                                    bodyElaborationResult.block()),
-                        forTree.span()),
+                        List.of(
+                                generateLoopBreakIf(conditionResult.expression()),
+                                bodyElaborationResult.block()), forTree.span()),
+                stepResult != null ? Optional.of(stepResult.statement()) : Optional.empty(),
                 forTree.span());
 
         TypedBlock typedBlock = new TypedBlock(
@@ -538,6 +533,7 @@ public class Elaborator implements
                                 bodyResult.block()
                         ),
                         whileTree.span()),
+                Optional.empty(),
                 whileTree.span());
 
 

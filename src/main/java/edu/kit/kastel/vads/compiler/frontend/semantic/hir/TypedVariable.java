@@ -13,4 +13,8 @@ public record TypedVariable(Symbol symbol, Span span) implements TypedExpression
     public TypedVariable asVariable() {
         return this;
     }
+
+    public <TContext> void accept(TypedVisitor<TContext> visitor, TContext context) {
+        visitor.visit(this, context);
+    }
 }

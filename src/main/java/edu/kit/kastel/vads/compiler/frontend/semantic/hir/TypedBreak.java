@@ -8,4 +8,8 @@ public record TypedBreak(Span span ) implements TypedStatement{
     public TypedBreak asBreak() {
         return this;
     }
+
+    public <TContext> void accept(TypedVisitor<TContext> visitor, TContext context) {
+        visitor.visit(this, context);
+    }
 }

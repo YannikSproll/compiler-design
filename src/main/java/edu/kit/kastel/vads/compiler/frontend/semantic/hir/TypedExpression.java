@@ -29,4 +29,6 @@ public sealed interface TypedExpression permits TypedBinaryOperation, TypedCondi
     default TypedVariable asVariable() {
         throw new UnsupportedOperationException("Expression is not a variable");
     }
+
+    <TContext> void accept(TypedVisitor<TContext> visitor, TContext context);
 }

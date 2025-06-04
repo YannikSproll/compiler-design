@@ -7,4 +7,8 @@ public record TypedFile(List<TypedFunction> functions) implements TypedNode {
     public TypedFile asTypedFile() {
         return this;
     }
+
+    public <TContext> void accept(TypedVisitor<TContext> visitor, TContext context) {
+        visitor.visit(this, context);
+    }
 }

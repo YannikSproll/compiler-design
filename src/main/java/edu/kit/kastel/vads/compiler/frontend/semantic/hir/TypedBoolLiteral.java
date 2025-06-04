@@ -8,4 +8,8 @@ public record TypedBoolLiteral(boolean value, HirType type, Span span) implement
     public TypedBoolLiteral asBoolLiteral() {
         return this;
     }
+
+    public <TContext> void accept(TypedVisitor<TContext> visitor, TContext context) {
+        visitor.visit(this, context);
+    }
 }

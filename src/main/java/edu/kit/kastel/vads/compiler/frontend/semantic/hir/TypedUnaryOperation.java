@@ -12,4 +12,8 @@ public record TypedUnaryOperation(UnaryOperator operator, TypedExpression expres
     public TypedUnaryOperation asUnaryOperation() {
         return this;
     }
+
+    public <TContext> void accept(TypedVisitor<TContext> visitor, TContext context) {
+        visitor.visit(this, context);
+    }
 }
