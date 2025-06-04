@@ -35,8 +35,13 @@ public class Elaborator implements
 
         Symbol lValueSymbol = lValueResult.lvalue().asVariable().symbol();
 
+        if (lValueSymbol.type() != expressionResult.type()) {
+            throw new SemanticException("Type mismatch of variable " + lValueSymbol.name() + " and assigned expression");
+        }
+
         return switch (assignmentTree.operator().type()) {
             case Operator.OperatorType.ASSIGN:  {
+
                 if (!lValueSymbol.isAssigned()) {
                     lValueSymbol.markAsAssigned(assignmentTree.span());
                 }
@@ -113,8 +118,6 @@ public class Elaborator implements
             case Operator.OperatorType.BITWISE_AND -> BinaryOperator.BITWISE_AND;
             case Operator.OperatorType.BITWISE_XOR -> BinaryOperator.BITWISE_XOR;
             case Operator.OperatorType.BITWISE_OR -> BinaryOperator.BITWISE_OR;
-            case Operator.OperatorType.LOGICAL_AND -> BinaryOperator.LOGICAL_AND;
-            case Operator.OperatorType.LOGICAL_OR -> BinaryOperator.LOGICAL_OR;
             default -> throw new IllegalStateException("Unexpected operator type: " + operatorType);
         };
     }
@@ -124,19 +127,17 @@ public class Elaborator implements
         ElaborationResult lhsResult = binaryOperationTree.lhs().accept(this, context);
         ElaborationResult rhsResult = binaryOperationTree.rhs().accept(this, context);
 
-        BinaryOperator binaryOperator = mapBinaryOperator(binaryOperationTree.operatorType());
-        TypedExpression resultExpression = switch (binaryOperator) {
-            case ADD,
-                 SUBTRACT,
-                 MULTIPLY,
-                 DIVIDE,
-                 MODULO,
+        TypedExpression resultExpression = switch (binaryOperationTree.operatorType()) {
+            case PLUS,
+                 MINUS,
+                 MUL,
+                 DIV,
+                 MOD,
                  LEFT_SHIFT,
                  RIGHT_SHIFT,
                  BITWISE_OR,
                  BITWISE_AND,
                  BITWISE_XOR -> {
-
                 if (lhsResult.expression().type() != HirType.INT
                     || rhsResult.expression().type() != HirType.INT) {
                     throw new IllegalStateException("Unexpected expression type: " + lhsResult.expression().type());
@@ -162,8 +163,8 @@ public class Elaborator implements
             }
             case GREATER_THAN,
                  LESS_THAN,
-                 GREATER_THAN_OR_EQUAL_TO,
-                 LESS_THAN_OR_EQUAL_TO -> {
+                 GREATER_OR_EQUAL,
+                 LESS_OR_EQUAL -> {
                 if (lhsResult.expression().type() != HirType.INT
                         || rhsResult.expression().type() != HirType.INT) {
                     throw new IllegalStateException("Unexpected expression type: " + lhsResult.expression().type());
@@ -201,6 +202,7 @@ public class Elaborator implements
                         rhsResult.expression(),
                         binaryOperationTree.span());
             }
+            default -> throw new IllegalStateException("Unexpected operator type: " + binaryOperationTree.operatorType());
         };
 
         return ElaborationResult.expression(resultExpression);
@@ -425,6 +427,12 @@ public class Elaborator implements
     @Override
     public ElaborationResult visit(ReturnTree returnTree, ElaborationContext context) {
         ElaborationResult expressionResult = returnTree.expression().accept(this, context);
+
+        // This changes as soon as function are allowed to return more than ints
+        if (expressionResult.expression().type() != HirType.INT) {
+            throw new SemanticException("Return statement must have an int type.");
+        }
+
         TypedReturn typedReturn = new TypedReturn(expressionResult.expression(), returnTree.span());
         return ElaborationResult.statement(typedReturn);
     }
@@ -443,6 +451,8 @@ public class Elaborator implements
     public ElaborationResult visit(ForTree forTree, ElaborationContext context) {
         ElaborationResult initializerResult = forTree.initializationStatementTree().accept(this, context);
         ElaborationResult conditionResult = forTree.conditionExpressionTree().accept(this, context);
+
+        // TODO: Check this is no declaration
         ElaborationResult stepResult = forTree.postIterationStatementTree().accept(this, context);
 
         ElaborationResult bodyElaborationResult = forTree.bodyStatementTree().accept(this, context);
@@ -450,18 +460,7 @@ public class Elaborator implements
         TypedLoop typedLoop = new TypedLoop(
                 new TypedBlock(
                         List.of(
-                                new TypedIf(
-                                        new TypedUnaryOperation(
-                                                UnaryOperator.NEGATION,
-                                                conditionResult.expression(),
-                                                conditionResult.expression().span()),
-                                        new TypedBlock(
-                                                List.of(
-                                                        new TypedBreak(
-                                                                conditionResult.expression().span())),
-                                                conditionResult.expression().span()),
-                                        Optional.empty(),
-                                        conditionResult.expression().span()),
+                                generateLoopBreakIf(conditionResult.expression()),
                                 bodyElaborationResult.block(),
                                 stepResult.statement()),
                         forTree.span()),
@@ -481,14 +480,19 @@ public class Elaborator implements
         ElaborationResult conditionResult = ifTree.conditionExpressionTree().accept(this, context);
         ElaborationResult thenResult = ifTree.statementTree().accept(this, context);
 
+        if (conditionResult.expression().type() != HirType.BOOLEAN) {
+            throw new SemanticException("If statement must have an boolean type.");
+        }
+
         Optional<TypedStatement> elseResult = Optional.empty();
         if (ifTree.elseTree() != null) {
-            //elseResult = Optional.of(ifTree.elseTree().accept(this, context).statements())
+            elseResult = Optional.of(ifTree.elseTree().accept(this, context).statement());
         }
+
         TypedIf typedIf = new TypedIf(
                 conditionResult.expression(),
                 thenResult.block(),
-                Optional.empty(),
+                elseResult,
                 ifTree.span());
 
         return ElaborationResult.statement(typedIf);
@@ -504,21 +508,14 @@ public class Elaborator implements
         ElaborationResult conditionResult = whileTree.conditionExpressionTree().accept(this, context);
         ElaborationResult bodyResult = whileTree.statementTree().accept(this, context);
 
+        if (conditionResult.expression().type() != HirType.BOOLEAN) {
+            throw new SemanticException("While statement must have an boolean type.");
+        }
+
         TypedLoop typedLoop = new TypedLoop(
                 new TypedBlock(
                         List.of(
-                                new TypedIf(
-                                        new TypedUnaryOperation(
-                                                UnaryOperator.NEGATION,
-                                                conditionResult.expression(),
-                                                conditionResult.expression().span()),
-                                        new TypedBlock(
-                                                List.of(
-                                                        new TypedBreak(
-                                                                conditionResult.expression().span())),
-                                                conditionResult.expression().span()),
-                                        Optional.empty(),
-                                        conditionResult.expression().span()),
+                                generateLoopBreakIf(conditionResult.expression()),
                                 bodyResult.block()
                         ),
                         whileTree.span()),
@@ -526,6 +523,21 @@ public class Elaborator implements
 
 
         return ElaborationResult.statement(typedLoop);
+    }
+
+    private static TypedIf generateLoopBreakIf(TypedExpression conditionExpression) {
+        return new TypedIf(
+                new TypedUnaryOperation(
+                        UnaryOperator.NEGATION,
+                        conditionExpression,
+                        conditionExpression.span()),
+                new TypedBlock(
+                        List.of(
+                                new TypedBreak(
+                                        conditionExpression.span())),
+                        conditionExpression.span()),
+                Optional.empty(),
+                conditionExpression.span());
     }
 
     @Override

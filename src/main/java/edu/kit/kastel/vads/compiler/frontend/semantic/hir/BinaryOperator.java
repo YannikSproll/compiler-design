@@ -14,8 +14,6 @@ public enum BinaryOperator {
     LESS_THAN,
     GREATER_THAN_OR_EQUAL_TO,
     LESS_THAN_OR_EQUAL_TO,
-    LOGICAL_AND,
-    LOGICAL_OR,
     BITWISE_OR,
     BITWISE_AND,
     BITWISE_XOR

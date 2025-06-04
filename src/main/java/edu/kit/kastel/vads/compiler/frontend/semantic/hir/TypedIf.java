@@ -6,8 +6,8 @@ import java.util.Optional;
 
 public record TypedIf(
         TypedExpression conditionExpression,
-        TypedBlock thenBlock,
-        Optional<TypedBlock> elseBlock,
+        TypedStatement thenStatement,
+        Optional<TypedStatement> elseStatement,
         Span span) implements TypedStatement {
     @Override
     public TypedIf AsIf() {

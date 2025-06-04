@@ -104,6 +104,11 @@ public sealed interface ElaborationResult permits ElaborationResult.BlockElabora
         public TypedBlock block() {
             return block;
         }
+
+        @Override
+        public TypedStatement statement() {
+            return block;
+        }
     }
 
     record LValueElaborationResult(TypedLValue lvalue) implements ElaborationResult {
