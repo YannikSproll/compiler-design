@@ -35,7 +35,7 @@ public class Elaborator implements
 
         Symbol lValueSymbol = lValueResult.lvalue().asVariable().symbol();
 
-        if (lValueSymbol.type() != expressionResult.type()) {
+        if (lValueSymbol.type() != expressionResult.expression().type()) {
             throw new SemanticException("Type mismatch of variable " + lValueSymbol.name() + " and assigned expression");
         }
 
@@ -449,27 +449,46 @@ public class Elaborator implements
 
     @Override
     public ElaborationResult visit(ForTree forTree, ElaborationContext context) {
-        ElaborationResult initializerResult = forTree.initializationStatementTree().accept(this, context);
+        ElaborationResult initializerResult = null;
+         if (forTree.initializationStatementTree() != null){
+             initializerResult = forTree.initializationStatementTree().accept(this, context);
+         }
+
         ElaborationResult conditionResult = forTree.conditionExpressionTree().accept(this, context);
 
         // TODO: Check this is no declaration
-        ElaborationResult stepResult = forTree.postIterationStatementTree().accept(this, context);
+        ElaborationResult stepResult = null;
+
+        if (forTree.postIterationStatementTree() != null) {
+            stepResult = forTree.postIterationStatementTree().accept(this, context);
+
+            // TODO: Maybe add separate analysis?
+            if (stepResult.statement() instanceof TypedDeclaration) {
+                throw new SemanticException("Step statement of for loop may not be a declaration.");
+            }
+        }
 
         ElaborationResult bodyElaborationResult = forTree.bodyStatementTree().accept(this, context);
 
         TypedLoop typedLoop = new TypedLoop(
                 new TypedBlock(
-                        List.of(
-                                generateLoopBreakIf(conditionResult.expression()),
-                                bodyElaborationResult.block(),
-                                stepResult.statement()),
+                        stepResult != null
+                                ? List.of(
+                                    generateLoopBreakIf(conditionResult.expression()),
+                                    bodyElaborationResult.block(),
+                                    stepResult.statement())
+                                : List.of(
+                                    generateLoopBreakIf(conditionResult.expression()),
+                                    bodyElaborationResult.block()),
                         forTree.span()),
                 forTree.span());
 
         TypedBlock typedBlock = new TypedBlock(
-                List.of(
+                initializerResult != null
+                ? List.of(
                         initializerResult.statement(),
-                        typedLoop),
+                        typedLoop)
+                : List.of(typedLoop),
                 forTree.span());
 
         return ElaborationResult.block(typedBlock);
