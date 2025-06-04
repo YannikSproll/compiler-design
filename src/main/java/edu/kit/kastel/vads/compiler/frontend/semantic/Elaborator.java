@@ -13,6 +13,10 @@ import java.util.OptionalLong;
 
 import static edu.kit.kastel.vads.compiler.frontend.semantic.ElaborationUtils.*;
 
+// Elaborates abstract syntax tree
+// Construct hir tree
+// Checks for integer ranges
+// Does type checking
 public class Elaborator implements
         Visitor<ElaborationContext, ElaborationResult> {
 
@@ -174,15 +178,13 @@ public class Elaborator implements
 
     @Override
     public ElaborationResult visit(BlockTree blockTree, ElaborationContext context) {
-        context.symbolTable().enterScope(ScopeType.BLOCK);
+        Scope currentScope = context.symbolTable().enterScope(ScopeType.BLOCK);
 
         List<TypedStatement> statements = new ArrayList<>();
         for (StatementTree statementTree : blockTree.statements()) {
             ElaborationResult statementResult = statementTree.accept(this, context);
             statements.addAll(statementResult.statements());
         }
-
-        Scope currentScope = context.symbolTable().getCurrentScope();
 
         context.symbolTable().exitScope();
 
@@ -226,7 +228,7 @@ public class Elaborator implements
 
     @Override
     public ElaborationResult visit(FunctionTree functionTree, ElaborationContext context) {
-        context.symbolTable().enterScope(ScopeType.FUNCTION);
+        Scope currentScope = context.symbolTable().enterScope(ScopeType.FUNCTION);
 
         ElaborationResult returnTypeResult = functionTree.returnType().accept(this, context);
         ElaborationResult nameResult = functionTree.name().accept(this, context);
@@ -239,7 +241,7 @@ public class Elaborator implements
                 returnTypeResult.type(),
                 functionTree.span(),
                 Optional.empty());
-        TypedFunction typedFunction = new TypedFunction(functionSymbol, bodyResult.block());
+        TypedFunction typedFunction = new TypedFunction(functionSymbol, bodyResult.block(), currentScope);
         return ElaborationResult.node(typedFunction);
     }
 
@@ -365,7 +367,7 @@ public class Elaborator implements
 
     @Override
     public ElaborationResult visit(ProgramTree programTree, ElaborationContext context) {
-        context.symbolTable().enterScope(ScopeType.FILE);
+        Scope currentScope = context.symbolTable().enterScope(ScopeType.FILE);
 
         List<TypedFunction> functions = new ArrayList<>();
         for (FunctionTree functionTree : programTree.topLevelTrees()) {
@@ -379,7 +381,7 @@ public class Elaborator implements
 
         context.symbolTable().exitScope();
 
-        TypedFile typedFile = new TypedFile(functions);
+        TypedFile typedFile = new TypedFile(functions, currentScope);
         return ElaborationResult.node(typedFile);
     }
 
