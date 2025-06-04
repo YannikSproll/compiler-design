@@ -1,6 +1,6 @@
 package edu.kit.kastel.vads.compiler.frontend.semantic.hir;
 
-public sealed interface TypedNode permits TypedFile, TypedFunction {
+public sealed interface TypedNode extends TypedObject permits TypedFile, TypedFunction {
 
     default TypedFile asTypedFile() {
         throw new UnsupportedOperationException("Node is not a file");

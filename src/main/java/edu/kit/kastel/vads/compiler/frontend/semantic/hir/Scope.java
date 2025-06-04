@@ -8,15 +8,22 @@ import java.util.Optional;
 public class Scope {
     private final HashMap<String, Symbol> typesOfVariables;
     private final Optional<Scope> parent;
+    private final ScopeType type;
 
-    public Scope() {
+    public Scope(ScopeType type) {
         this.typesOfVariables = new HashMap<>();
         this.parent = Optional.empty();
+        this.type = type;
     }
 
-    public Scope(Scope parent) {
+    public Scope(Scope parent, ScopeType type) {
         this.typesOfVariables = new HashMap<>();
         this.parent = Optional.of(parent);
+        this.type = type;
+    }
+
+    public ScopeType type() {
+        return type;
     }
 
     public void putType(String name, Symbol symbol) {typesOfVariables.put(name, symbol);}

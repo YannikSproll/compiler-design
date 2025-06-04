@@ -11,22 +11,22 @@ public final class TypedPostorderVisitor<TContext> implements TypedVisitor<TCont
 
     @Override
     public void visit(TypedAssignment assignment, TContext tContext) {
-        assignment.lValue().accept(visitor, tContext);
-        assignment.initializer().accept(visitor, tContext);
+        assignment.lValue().accept(this, tContext);
+        assignment.initializer().accept(this, tContext);
         visitor.visit(assignment, tContext);
     }
 
     @Override
     public void visit(TypedBinaryOperation operation, TContext tContext) {
-        operation.lhsExpression().accept(visitor, tContext);
-        operation.rhsExpression().accept(visitor, tContext);
+        operation.lhsExpression().accept(this, tContext);
+        operation.rhsExpression().accept(this, tContext);
         visitor.visit(operation, tContext);
     }
 
     @Override
     public void visit(TypedBlock block, TContext tContext) {
         for (TypedStatement typedStatement : block.statements()) {
-            typedStatement.accept(visitor, tContext);
+            typedStatement.accept(this, tContext);
         }
         this.visitor.visit(block, tContext);
     }
@@ -43,9 +43,9 @@ public final class TypedPostorderVisitor<TContext> implements TypedVisitor<TCont
 
     @Override
     public void visit(TypedConditionalExpression conditionalExpression, TContext tContext) {
-        conditionalExpression.conditionExpression().accept(visitor, tContext);
-        conditionalExpression.thenExpression().accept(visitor, tContext);
-        conditionalExpression.elseExpression().accept(visitor, tContext);
+        conditionalExpression.conditionExpression().accept(this, tContext);
+        conditionalExpression.thenExpression().accept(this, tContext);
+        conditionalExpression.elseExpression().accept(this, tContext);
         visitor.visit(conditionalExpression, tContext);
     }
 
@@ -57,7 +57,7 @@ public final class TypedPostorderVisitor<TContext> implements TypedVisitor<TCont
     @Override
     public void visit(TypedDeclaration declaration, TContext tContext) {
         if (declaration.initializer().isPresent()) {
-            declaration.initializer().get().accept(visitor, tContext);
+            declaration.initializer().get().accept(this, tContext);
         }
         visitor.visit(declaration, tContext);
     }
@@ -65,23 +65,23 @@ public final class TypedPostorderVisitor<TContext> implements TypedVisitor<TCont
     @Override
     public void visit(TypedFile file, TContext tContext) {
         for (TypedFunction function : file.functions()) {
-            function.accept(visitor, tContext);
+            function.accept(this, tContext);
         }
         visitor.visit(file, tContext);
     }
 
     @Override
     public void visit(TypedFunction function, TContext tContext) {
-        function.body().accept(visitor, tContext);
-        function.accept(visitor, tContext);
+        function.body().accept(this, tContext);
+        visitor.visit(function, tContext);
     }
 
     @Override
     public void visit(TypedIf ifStatement, TContext tContext) {
-        ifStatement.conditionExpression().accept(visitor, tContext);
-        ifStatement.thenStatement().accept(visitor, tContext);
+        ifStatement.conditionExpression().accept(this, tContext);
+        ifStatement.thenStatement().accept(this, tContext);
         if (ifStatement.elseStatement().isPresent()) {
-            ifStatement.elseStatement().get().accept(visitor, tContext);
+            ifStatement.elseStatement().get().accept(this, tContext);
         }
         visitor.visit(ifStatement, tContext);
     }
@@ -93,22 +93,22 @@ public final class TypedPostorderVisitor<TContext> implements TypedVisitor<TCont
 
     @Override
     public void visit(TypedLoop loop, TContext tContext) {
-        loop.body().accept(visitor, tContext);
+        loop.body().accept(this, tContext);
         if (loop.postIterationStatement().isPresent()) {
-            loop.postIterationStatement().get().accept(visitor, tContext);
+            loop.postIterationStatement().get().accept(this, tContext);
         }
         visitor.visit(loop, tContext);
     }
 
     @Override
     public void visit(TypedReturn returnStatement, TContext tContext) {
-        returnStatement.returnExpression().accept(visitor, tContext);
+        returnStatement.returnExpression().accept(this, tContext);
         visitor.visit(returnStatement, tContext);
     }
 
     @Override
     public void visit(TypedUnaryOperation operation, TContext tContext) {
-        operation.expression().accept(visitor, tContext);
+        operation.expression().accept(this, tContext);
         visitor.visit(operation, tContext);
     }
 

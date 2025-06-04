@@ -23,11 +23,11 @@ public class SymbolTable {
         return getCurrentScope().typeOf(name);
     }
 
-    public void enterScope() {
+    public void enterScope(ScopeType scopeType) {
         if (!scopes.isEmpty()) {
-            scopes.push(new Scope(scopes.peek()));
+            scopes.push(new Scope(scopes.peek(), scopeType));
         } else {
-            scopes.push(new Scope());
+            scopes.push(new Scope(scopeType));
         }
     }
 
