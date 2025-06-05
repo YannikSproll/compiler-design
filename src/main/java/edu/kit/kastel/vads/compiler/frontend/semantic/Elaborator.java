@@ -20,6 +20,12 @@ import static edu.kit.kastel.vads.compiler.frontend.semantic.ElaborationUtils.*;
 public class Elaborator implements
         Visitor<ElaborationContext, ElaborationResult> {
 
+    private final TypeChecker typeChecker;
+
+    public Elaborator(TypeChecker typeChecker) {
+        this.typeChecker = typeChecker;
+    }
+
     public TypedFile elaborate(ProgramTree program) {
 
         SymbolTable symbolTable = new SymbolTable();
@@ -39,15 +45,10 @@ public class Elaborator implements
         ElaborationResult lValueResult = assignmentTree.lValue().accept(this, context);
         ElaborationResult expressionResult = assignmentTree.expression().accept(this, context);
 
-        Symbol lValueSymbol = lValueResult.lvalue().asVariable().symbol();
-
-        if (lValueSymbol.type() != expressionResult.expression().type()) {
-            throw new SemanticException("Type mismatch of variable " + lValueSymbol.name() + " and assigned expression");
-        }
+        typeChecker.expectEqualTypes(lValueResult.lvalue(), expressionResult.expression());
 
         return switch (assignmentTree.operator().type()) {
             case Operator.OperatorType.ASSIGN:  {
-
                 TypedAssignment assignment = new TypedAssignment(
                         lValueResult.lvalue(),
                         expressionResult.expression(),
@@ -63,7 +64,9 @@ public class Elaborator implements
                  Operator.OperatorType.ASSIGN_BITWISE_OR,
                  Operator.OperatorType.ASSIGN_BITWISE_XOR,
                  Operator.OperatorType.ASSIGN_LEFT_SHIFT,
-                 Operator.OperatorType.ASSIGN_RIGHT_SHIFT:{
+                 Operator.OperatorType.ASSIGN_RIGHT_SHIFT: {
+
+                typeChecker.expectType(HirType.INT, lValueResult.lvalue());
 
                 TypedAssignment assignment = new TypedAssignment(
                         lValueResult.lvalue(),
@@ -99,10 +102,8 @@ public class Elaborator implements
                  BITWISE_OR,
                  BITWISE_AND,
                  BITWISE_XOR -> {
-                if (lhsResult.expression().type() != HirType.INT
-                    || rhsResult.expression().type() != HirType.INT) {
-                    throw new SemanticException("Unexpected expression type: " + lhsResult.expression().type());
-                }
+                typeChecker.expectType(HirType.INT, lhsResult.expression());
+                typeChecker.expectType(HirType.INT, rhsResult.expression());
 
                 yield new TypedBinaryOperation(
                         lhsResult.expression().type(),
@@ -112,9 +113,8 @@ public class Elaborator implements
                         binaryOperationTree.span());
             }
             case EQUAL_TO, UNEQUAL_TO -> {
-                if (lhsResult.expression().type() != rhsResult.expression().type()) {
-                    throw new SemanticException("Unexpected expression type: " + lhsResult.expression().type());
-                }
+                typeChecker.expectEqualTypes(lhsResult.expression(), rhsResult.expression());
+
                 yield new TypedBinaryOperation(
                         HirType.BOOLEAN,
                         mapBinaryOperator(binaryOperationTree.operatorType()),
@@ -126,10 +126,9 @@ public class Elaborator implements
                  LESS_THAN,
                  GREATER_OR_EQUAL,
                  LESS_OR_EQUAL -> {
-                if (lhsResult.expression().type() != HirType.INT
-                        || rhsResult.expression().type() != HirType.INT) {
-                    throw new SemanticException("Unexpected expression type: " + lhsResult.expression().type());
-                }
+                typeChecker.expectType(HirType.INT, lhsResult.expression());
+                typeChecker.expectType(HirType.INT, rhsResult.expression());
+
                 yield new TypedBinaryOperation(
                         HirType.BOOLEAN,
                         mapBinaryOperator(binaryOperationTree.operatorType()),
@@ -138,10 +137,8 @@ public class Elaborator implements
                         binaryOperationTree.span());
             }
             case LOGICAL_AND -> {
-                if (lhsResult.expression().type() != HirType.BOOLEAN
-                        || rhsResult.expression().type() != HirType.BOOLEAN) {
-                    throw new SemanticException("Unexpected expression type: " + lhsResult.expression().type());
-                }
+                typeChecker.expectType(HirType.BOOLEAN, lhsResult.expression());
+                typeChecker.expectType(HirType.BOOLEAN, rhsResult.expression());
 
                 yield new TypedConditionalExpression(
                         HirType.BOOLEAN,
@@ -151,10 +148,8 @@ public class Elaborator implements
                         binaryOperationTree.span());
             }
             case LOGICAL_OR -> {
-                if (lhsResult.expression().type() != HirType.BOOLEAN
-                        || rhsResult.expression().type() != HirType.BOOLEAN) {
-                    throw new IllegalStateException("Unexpected expression type: " + lhsResult.expression().type());
-                }
+                typeChecker.expectType(HirType.BOOLEAN, lhsResult.expression());
+                typeChecker.expectType(HirType.BOOLEAN, rhsResult.expression());
 
                 yield new TypedConditionalExpression(
                         HirType.BOOLEAN,
@@ -253,15 +248,9 @@ public class Elaborator implements
         ElaborationResult thenExpResult = conditionalExpressionTree.thenTree().accept(this, context);
         ElaborationResult elseExpResult = conditionalExpressionTree.elseTree().accept(this,context);
 
-        if (conditionResult.expression().type() != HirType.BOOLEAN) {
-            throw new SemanticException("Conditions must have boolean type");
-        }
+        typeChecker.expectType(HirType.BOOLEAN, conditionResult.expression());
 
-        if (thenExpResult.expression().type() != elseExpResult.expression().type()) {
-            throw new SemanticException("The expression at"
-                    + thenExpResult.expression().span() + " and at "
-                    + elseExpResult.expression().span() + " are not of the same type.");
-        }
+        typeChecker.expectEqualTypes(thenExpResult.expression(), elseExpResult.expression());
 
         TypedConditionalExpression typedConditionalExpression = new TypedConditionalExpression(
                 thenExpResult.expression().type(), // Is the same as for elseExpResult because it is checked above
@@ -321,10 +310,7 @@ public class Elaborator implements
          switch (negateTree.operatorType()) {
              case Operator.OperatorType.MINUS,
                   Operator.OperatorType.BITWISE_NOT: {
-
-                 if (typedExpression.type() != HirType.BOOLEAN) {
-                     throw new SemanticException("The unary operator " + negateTree.operatorType() + " requires an integer expression.");
-                 }
+                 typeChecker.expectType(HirType.INT, typedExpression);
 
                   typedUnaryOperation = new TypedUnaryOperation(
                         mapUnaryOperator(negateTree.operatorType()),
@@ -333,10 +319,7 @@ public class Elaborator implements
                   break;
             }
             case Operator.OperatorType.LOGICAL_NOT: {
-
-                if (typedExpression.type() != HirType.BOOLEAN) {
-                    throw new SemanticException("The unary operator " + negateTree.operatorType() + " requires a bool expression.");
-                }
+                typeChecker.expectType(HirType.BOOLEAN, typedExpression);
 
                  typedUnaryOperation = new TypedUnaryOperation(
                         UnaryOperator.LOGICAL_NOT,
@@ -375,9 +358,7 @@ public class Elaborator implements
         ElaborationResult expressionResult = returnTree.expression().accept(this, context);
 
         // This changes as soon as function are allowed to return more than ints
-        if (expressionResult.expression().type() != HirType.INT) {
-            throw new SemanticException("Return statement must have an int type.");
-        }
+        typeChecker.expectType(HirType.INT, expressionResult.expression());
 
         TypedReturn typedReturn = new TypedReturn(expressionResult.expression(), returnTree.span());
         return ElaborationResult.statement(typedReturn);
