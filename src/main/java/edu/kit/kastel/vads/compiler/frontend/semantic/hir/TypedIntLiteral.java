@@ -12,4 +12,8 @@ public record TypedIntLiteral(int value, HirType type, Span span) implements Typ
     public <TContext> void accept(TypedVisitor<TContext> visitor, TContext context) {
         visitor.visit(this, context);
     }
+
+    public <TContext, TResult> TResult accept(TypedResultVisitor<TContext, TResult> visitor, TContext context) {
+        return visitor.visit(this, context);
+    }
 }

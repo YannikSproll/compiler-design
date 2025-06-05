@@ -1,8 +1,6 @@
 package edu.kit.kastel.vads.compiler.frontend.semantic;
 
 import edu.kit.kastel.vads.compiler.frontend.parser.ast.ProgramTree;
-import edu.kit.kastel.vads.compiler.frontend.parser.visitor.RecursivePostorderPreVisitor;
-import edu.kit.kastel.vads.compiler.frontend.parser.visitor.RecursivePostorderVisitor;
 import edu.kit.kastel.vads.compiler.frontend.semantic.hir.TypedFile;
 
 public class SemanticAnalysis {
@@ -20,5 +18,6 @@ public class SemanticAnalysis {
         Elaborator elaborator = new Elaborator();
         TypedFile typedFile = elaborator.elaborate(program);
         typedFile.accept(new TypedPostorderVisitor<>(new ReturnAnalysis()), new ReturnAnalysis.ReturnState());
+        typedFile.accept(new VariableDefinitionAnalysis(), new VariableDefinitionAnalysis.VariableDefinitionContext());
     }
 }

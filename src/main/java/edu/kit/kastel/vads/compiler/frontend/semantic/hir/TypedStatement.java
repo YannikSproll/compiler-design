@@ -30,4 +30,5 @@ public sealed interface TypedStatement extends TypedObject permits TypedAssignme
     default TypedBreak asBreak() { throw new UnsupportedOperationException("Statement is not a break"); }
 
     <TContext> void accept(TypedVisitor<TContext> visitor, TContext context);
+    <TContext, TResult> TResult accept(TypedResultVisitor<TContext, TResult> visitor, TContext context);
 }

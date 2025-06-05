@@ -11,4 +11,5 @@ public sealed interface TypedLValue permits TypedVariable {
     }
 
     <TContext> void accept(TypedVisitor<TContext> visitor, TContext context);
+    <TContext, TResult> TResult accept(TypedResultVisitor<TContext, TResult> visitor, TContext context);
 }

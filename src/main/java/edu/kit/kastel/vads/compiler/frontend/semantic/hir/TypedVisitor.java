@@ -1,5 +1,6 @@
 package edu.kit.kastel.vads.compiler.frontend.semantic.hir;
 
+
 public interface TypedVisitor<TContext> {
     void visit(TypedAssignment assignment, TContext context);
     void visit(TypedBinaryOperation operation, TContext context);

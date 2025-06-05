@@ -48,10 +48,6 @@ public class Elaborator implements
         return switch (assignmentTree.operator().type()) {
             case Operator.OperatorType.ASSIGN:  {
 
-                if (!lValueSymbol.isAssigned()) {
-                    lValueSymbol.markAsAssigned(assignmentTree.span());
-                }
-
                 TypedAssignment assignment = new TypedAssignment(
                         lValueResult.lvalue(),
                         expressionResult.expression(),
@@ -68,9 +64,6 @@ public class Elaborator implements
                  Operator.OperatorType.ASSIGN_BITWISE_XOR,
                  Operator.OperatorType.ASSIGN_LEFT_SHIFT,
                  Operator.OperatorType.ASSIGN_RIGHT_SHIFT:{
-                if (!lValueSymbol.isAssigned()) {
-                    throw new SemanticException("Variable " + lValueSymbol + " must be assigned before using it.");
-                }
 
                 TypedAssignment assignment = new TypedAssignment(
                         lValueResult.lvalue(),
@@ -214,8 +207,7 @@ public class Elaborator implements
         Symbol declaredVariableSymbol = new Symbol(
                 nameResult.name(),
                 typeResult.type(),
-                declarationTree.span(),
-                declarationTree.initializer() != null ? Optional.of(declarationTree.span()) : Optional.empty());
+                declarationTree.span());
         context.symbolTable().getCurrentScope().putType(nameResult.name(), declaredVariableSymbol);
 
         TypedDeclaration typedDeclaration = new TypedDeclaration(
@@ -223,6 +215,7 @@ public class Elaborator implements
                 typeResult.type(),
                 typedInitializer,
                 declarationTree.span());
+
         return ElaborationResult.statement(typedDeclaration);
     }
 
@@ -239,8 +232,7 @@ public class Elaborator implements
         Symbol functionSymbol = new Symbol(
                 nameResult.name(),
                 returnTypeResult.type(),
-                functionTree.span(),
-                Optional.empty());
+                functionTree.span());
         TypedFunction typedFunction = new TypedFunction(functionSymbol, bodyResult.block(), currentScope);
         return ElaborationResult.node(typedFunction);
     }
@@ -250,10 +242,6 @@ public class Elaborator implements
         ElaborationResult nameResult = identExpressionTree.name().accept(this, context);
 
         Symbol variableSymbol = context.symbolTable().getCurrentScope().typeOf(nameResult.name());
-
-        if (!variableSymbol.isAssigned()) {
-            throw new SemanticException("Variable " + nameResult.name() + " can not be used before it is assigned.");
-        }
 
         TypedVariable typedVariable = new TypedVariable(variableSymbol, identExpressionTree.span());
         return ElaborationResult.expression(typedVariable);
@@ -313,9 +301,6 @@ public class Elaborator implements
     public ElaborationResult visit(LValueIdentTree lValueIdentTree, ElaborationContext context) {
         ElaborationResult nameResult = lValueIdentTree.name().accept(this, context);
 
-        if (!context.symbolTable().isVariableDeclared(nameResult.name())) {
-            throw new SemanticException("Variable " + nameResult.name() + " can not be used before it is declared.");
-        }
         Symbol variableSymbol = context.symbolTable().getCurrentScope().typeOf(nameResult.name());
 
         TypedVariable typedVariable = new TypedVariable(variableSymbol, lValueIdentTree.span());
@@ -422,7 +407,7 @@ public class Elaborator implements
         if (forTree.postIterationStatementTree() != null) {
             stepResult = forTree.postIterationStatementTree().accept(this, context);
 
-            // TODO: Maybe add separate analysis?
+            // Make sure post iteration statement is not a declaration
             if (stepResult.statement() instanceof TypedDeclaration) {
                 throw new SemanticException("Step statement of for loop may not be a declaration.");
             }

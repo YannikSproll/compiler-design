@@ -11,4 +11,5 @@ public sealed interface TypedNode extends TypedObject permits TypedFile, TypedFu
     }
 
     <TContext> void accept(TypedVisitor<TContext> visitor, TContext context);
+    <TContext, TResult> TResult accept(TypedResultVisitor<TContext, TResult> visitor, TContext context);
 }

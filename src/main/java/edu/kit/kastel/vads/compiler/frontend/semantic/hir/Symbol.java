@@ -9,13 +9,13 @@ public final class Symbol {
     private final String name;
     private final HirType type;
     private final Span declaredAt;
-    private Optional<Span> firstAssignedAt;
+    private Optional<TypedStatement> definingStatement;
 
-    public Symbol(String name, HirType type, Span declaredAt, Optional<Span> firstAssignedAt) {
+    public Symbol(String name, HirType type, Span declaredAt) {
         this.name = name;
         this.type = type;
         this.declaredAt = declaredAt;
-        this.firstAssignedAt = firstAssignedAt;
+        this.definingStatement = Optional.empty();
     }
 
     public String name() {
@@ -30,18 +30,18 @@ public final class Symbol {
         return declaredAt;
     }
 
-    public Optional<Span> firstAssignedAt() {
-        return firstAssignedAt;
+    public Optional<TypedStatement> definedAt() {
+        return definingStatement;
     }
 
-    public boolean isAssigned() {
-        return firstAssignedAt.isPresent();
+    public boolean isDefined() {
+        return definingStatement.isPresent();
     }
 
-    public void markAsAssigned(Span assignedAt) {
-        if (firstAssignedAt.isPresent()) {
+    public void markAsDefined(TypedStatement definingStatement) {
+        if (this.definingStatement.isPresent()) {
             throw new IllegalStateException("Can not mark variable " + name + " as assigned, because it already is assigned");
         }
-        firstAssignedAt = Optional.of(assignedAt);
+        this.definingStatement = Optional.of(definingStatement);
     }
 }

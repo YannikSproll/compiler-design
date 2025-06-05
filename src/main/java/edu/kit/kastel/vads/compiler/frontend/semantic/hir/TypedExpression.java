@@ -31,4 +31,5 @@ public sealed interface TypedExpression extends TypedObject permits TypedBinaryO
     }
 
     <TContext> void accept(TypedVisitor<TContext> visitor, TContext context);
+    <TContext, TResult> TResult accept(TypedResultVisitor<TContext, TResult> visitor, TContext context);
 }
