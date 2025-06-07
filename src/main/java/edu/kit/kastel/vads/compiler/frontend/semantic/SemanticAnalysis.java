@@ -12,14 +12,13 @@ public class SemanticAnalysis {
         this.program = program;
     }
 
-    public void analyze() {
-        //this.program.accept(new RecursivePostorderVisitor<>(new IntegerLiteralRangeAnalysis()), new Namespace<>());
-        //this.program.accept(new RecursivePostorderVisitor<>(new VariableStatusAnalysis()), new Namespace<>());
-        //this.program.accept(new RecursivePostorderVisitor<>(new ReturnAnalysis()), new ReturnAnalysis.ReturnState());
+    public TypedFile analyze() {
         TypeChecker typeChecker = new TypeChecker();
         Elaborator elaborator = new Elaborator(typeChecker);
         TypedFile typedFile = elaborator.elaborate(program);
         typedFile.accept(new TypedPostorderVisitor<>(new ReturnAnalysis()), new ReturnAnalysis.ReturnState());
         typedFile.accept(new VariableDefinitionAnalysis(), new VariableDefinitionAnalysis.VariableDefinitionContext());
+
+        return typedFile;
     }
 }

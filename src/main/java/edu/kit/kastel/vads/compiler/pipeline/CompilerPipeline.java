@@ -1,5 +1,6 @@
 package edu.kit.kastel.vads.compiler.pipeline;
 
+import edu.kit.kastel.vads.compiler.frontend.semantic.hir.TypedFile;
 import edu.kit.kastel.vads.compiler.ir.IrGraph;
 import edu.kit.kastel.vads.compiler.frontend.parser.ast.ProgramTree;
 
@@ -22,11 +23,12 @@ public final class CompilerPipeline {
     public void run(CompilerPipelineRunInfo runInfo) throws IOException {
         ProgramTree ast = parseAndLexStep.run(runInfo);
 
-        semanticAnalysisStep.run(ast);
+        TypedFile typedFile = semanticAnalysisStep.run(ast);
 
-        List<IrGraph> irGraphs = irStep.run(ast);
+         irStep.run(typedFile);
+        //List<IrGraph> irGraphs = irStep.run(ast);
 
-        CodeGenerationContext codeGenerationContext = new CodeGenerationContext(ast, runInfo);
-        codeGenerationStep.run(irGraphs, codeGenerationContext);
+        //CodeGenerationContext codeGenerationContext = new CodeGenerationContext(ast, runInfo);
+        //codeGenerationStep.run(irGraphs, codeGenerationContext);
     }
 }

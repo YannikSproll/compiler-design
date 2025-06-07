@@ -1,7 +1,10 @@
 package edu.kit.kastel.vads.compiler.pipeline;
 
+import edu.kit.kastel.vads.compiler.frontend.semantic.hir.TypedFile;
 import edu.kit.kastel.vads.compiler.ir.IrGraph;
 import edu.kit.kastel.vads.compiler.ir.SsaTranslation;
+import edu.kit.kastel.vads.compiler.ir.data.SsaConstruction;
+import edu.kit.kastel.vads.compiler.ir.data.SsaConstructionContext;
 import edu.kit.kastel.vads.compiler.ir.optimize.LocalValueNumbering;
 import edu.kit.kastel.vads.compiler.frontend.parser.ast.FunctionTree;
 import edu.kit.kastel.vads.compiler.frontend.parser.ast.ProgramTree;
@@ -19,5 +22,10 @@ public class IRStep {
         }
 
         return Collections.unmodifiableList(graphs);
+    }
+
+    public void run(TypedFile typedFile) {
+        SsaConstruction construction = new SsaConstruction();
+        construction.generateIr(typedFile);
     }
 }

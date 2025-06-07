@@ -2,11 +2,12 @@ package edu.kit.kastel.vads.compiler.pipeline;
 
 import edu.kit.kastel.vads.compiler.frontend.parser.ast.ProgramTree;
 import edu.kit.kastel.vads.compiler.frontend.semantic.SemanticAnalysis;
+import edu.kit.kastel.vads.compiler.frontend.semantic.hir.TypedFile;
 
 public class SemanticAnalysisStep {
 
-    public void run(ProgramTree ast) {
+    public TypedFile run(ProgramTree ast) {
 
-        new SemanticAnalysis(ast).analyze();
+        return new SemanticAnalysis(ast).analyze();
     }
 }
