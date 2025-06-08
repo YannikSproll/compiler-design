@@ -366,16 +366,26 @@ public class Elaborator implements
 
     @Override
     public ElaborationResult visit(BreakTree breakTree, ElaborationContext context) {
+        if (!context.isCurrentlyInLoop()) {
+            throw new SemanticException("break not in loop");
+        }
+
         return ElaborationResult.statement(new TypedBreak(breakTree.span()));
     }
 
     @Override
     public ElaborationResult visit(ContinueTree continueTree, ElaborationContext context) {
+        if (!context.isCurrentlyInLoop()) {
+            throw new SemanticException("continue not in loop");
+        }
+
         return ElaborationResult.statement(new TypedContinue(continueTree.span()));
     }
 
     @Override
     public ElaborationResult visit(ForTree forTree, ElaborationContext context) {
+        context.incrementNestedLoopDepth();
+
         ElaborationResult initializerResult = null;
          if (forTree.initializationStatementTree() != null){
              initializerResult = forTree.initializationStatementTree().accept(this, context);
@@ -411,6 +421,8 @@ public class Elaborator implements
                 Optional.empty(),
                 forTree.span());
 
+        context.decrementNestedLoopDepth();
+
         return ElaborationResult.block(typedBlock);
     }
 
@@ -444,6 +456,8 @@ public class Elaborator implements
 
     @Override
     public ElaborationResult visit(WhileTree whileTree, ElaborationContext context) {
+        context.incrementNestedLoopDepth();
+
         ElaborationResult conditionResult = whileTree.conditionExpressionTree().accept(this, context);
         ElaborationResult bodyResult = whileTree.statementTree().accept(this, context);
 
@@ -456,6 +470,8 @@ public class Elaborator implements
                 bodyResult.block(),
                 Optional.empty(),
                 whileTree.span());
+
+        context.decrementNestedLoopDepth();
 
         return ElaborationResult.statement(typedLoop);
     }
