@@ -397,12 +397,8 @@ public class Elaborator implements
         ElaborationResult bodyElaborationResult = forTree.bodyStatementTree().accept(this, context);
 
         TypedLoop typedLoop = new TypedLoop(
-                new TypedBlock(
-                        List.of(
-                                generateLoopBreakIf(conditionResult.expression()),
-                                bodyElaborationResult.block()),
-                        Optional.empty(),
-                        forTree.span()),
+                conditionResult.expression(),
+                bodyElaborationResult.block(),
                 stepResult != null ? Optional.of(stepResult.statement()) : Optional.empty(),
                 forTree.span());
 
@@ -456,16 +452,10 @@ public class Elaborator implements
         }
 
         TypedLoop typedLoop = new TypedLoop(
-                new TypedBlock(
-                        List.of(
-                                generateLoopBreakIf(conditionResult.expression()),
-                                bodyResult.block()
-                        ),
-                        Optional.empty(),
-                        whileTree.span()),
+                conditionResult.expression(),
+                bodyResult.block(),
                 Optional.empty(),
                 whileTree.span());
-
 
         return ElaborationResult.statement(typedLoop);
     }

@@ -7,22 +7,6 @@ import java.util.List;
 import java.util.Optional;
 
 final class ElaborationUtils {
-    static TypedIf generateLoopBreakIf(TypedExpression conditionExpression) {
-        return new TypedIf(
-                new TypedUnaryOperation(
-                        UnaryOperator.LOGICAL_NOT,
-                        conditionExpression,
-                        conditionExpression.span()),
-                new TypedBlock(
-                        List.of(
-                                new TypedBreak(
-                                        conditionExpression.span())),
-                        Optional.empty(),
-                        conditionExpression.span()),
-                Optional.empty(),
-                conditionExpression.span());
-    }
-
     static UnaryOperator mapUnaryOperator(Operator.OperatorType operatorType) {
         return switch (operatorType) {
             case Operator.OperatorType.MINUS -> UnaryOperator.NEGATION;

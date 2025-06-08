@@ -5,6 +5,7 @@ import edu.kit.kastel.vads.compiler.Span;
 import java.util.Optional;
 
 public record TypedLoop(
+        TypedExpression conditionExpression,
         TypedBlock body,
         Optional<TypedStatement> postIterationStatement,
         Span span) implements TypedStatement {
