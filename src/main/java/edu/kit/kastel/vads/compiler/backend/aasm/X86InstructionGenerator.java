@@ -173,6 +173,119 @@ public class X86InstructionGenerator {
         return this;
     }
 
+    public X86InstructionGenerator generateLeftShiftInstruction(InstructionParameter sourceRegister, InstructionParameter destinationRegister, BitSize bitSize) {
+        generateIndentationSpace();
+        builder.append(formatter.formatInstruction(X86Instruction.LEFT_SHIFT, bitSize))
+                .append(" ")
+                .append(formatInstructionParameter(sourceRegister, bitSize))
+                .append(REGISTER_SEPARATOR)
+                .append(formatInstructionParameter(destinationRegister, bitSize))
+                .append(NEW_LINE);
+        return this;
+    }
+
+    public X86InstructionGenerator generateRightShiftInstruction(InstructionParameter sourceRegister, InstructionParameter destinationRegister, BitSize bitSize) {
+        generateIndentationSpace();
+        builder.append(formatter.formatInstruction(X86Instruction.RIGHT_SHIFT, bitSize))
+                .append(" ")
+                .append(formatInstructionParameter(sourceRegister, bitSize))
+                .append(REGISTER_SEPARATOR)
+                .append(formatInstructionParameter(destinationRegister, bitSize))
+                .append(NEW_LINE);
+        return this;
+    }
+
+    public X86InstructionGenerator generateComparisonInstruction(InstructionParameter leftRegister, InstructionParameter rightRegister, BitSize bitSize) {
+        generateIndentationSpace();
+        builder.append(formatter.formatInstruction(X86Instruction.COMPARISON, bitSize))
+                .append(" ")
+                .append(formatInstructionParameter(leftRegister, bitSize))
+                .append(REGISTER_SEPARATOR)
+                .append(formatInstructionParameter(rightRegister, bitSize))
+                .append(NEW_LINE);
+        return this;
+    }
+
+    public X86InstructionGenerator generateSetConditionCodeInstruction(InstructionParameter destinationRegister, X86ConditionCode conditionCode, BitSize bitSize) {
+        generateIndentationSpace();
+        builder.append(formatter.formatInstruction(X86Instruction.SET_CONDITION_CODE, bitSize))
+                .append(formatter.formatConditionCode(conditionCode))
+                .append(" ")
+                .append(formatInstructionParameter(destinationRegister, bitSize))
+                .append(NEW_LINE);
+        return this;
+    }
+
+    public X86InstructionGenerator generateBitwiseAndInstruction(InstructionParameter sourceRegister, InstructionParameter destinationRegister, BitSize bitSize) {
+        generateIndentationSpace();
+        builder.append(formatter.formatInstruction(X86Instruction.BITWISE_AND, bitSize))
+                .append(" ")
+                .append(formatInstructionParameter(sourceRegister, bitSize))
+                .append(REGISTER_SEPARATOR)
+                .append(formatInstructionParameter(destinationRegister, bitSize))
+                .append(NEW_LINE);
+        return this;
+    }
+
+    public X86InstructionGenerator generateBitwiseOrInstruction(InstructionParameter sourceRegister, InstructionParameter destinationRegister, BitSize bitSize) {
+        generateIndentationSpace();
+        builder.append(formatter.formatInstruction(X86Instruction.BITWISE_OR, bitSize))
+                .append(" ")
+                .append(formatInstructionParameter(sourceRegister, bitSize))
+                .append(REGISTER_SEPARATOR)
+                .append(formatInstructionParameter(destinationRegister, bitSize))
+                .append(NEW_LINE);
+        return this;
+    }
+
+    public X86InstructionGenerator generateBitwiseXorInstruction(InstructionParameter sourceRegister, InstructionParameter destinationRegister, BitSize bitSize) {
+        generateIndentationSpace();
+        builder.append(formatter.formatInstruction(X86Instruction.BITWISE_XOR, bitSize))
+                .append(" ")
+                .append(formatInstructionParameter(sourceRegister, bitSize))
+                .append(REGISTER_SEPARATOR)
+                .append(formatInstructionParameter(destinationRegister, bitSize))
+                .append(NEW_LINE);
+        return this;
+    }
+
+    public X86InstructionGenerator generateBitwiseNotInstruction(InstructionParameter destinationRegister, BitSize bitSize) {
+        generateIndentationSpace();
+        builder.append(formatter.formatInstruction(X86Instruction.BITWISE_NOT, bitSize))
+                .append(" ")
+                .append(formatInstructionParameter(destinationRegister, bitSize))
+                .append(NEW_LINE);
+        return this;
+    }
+
+    public X86InstructionGenerator generateNegationInstruction(InstructionParameter destinationRegister, BitSize bitSize) {
+        generateIndentationSpace();
+        builder.append(formatter.formatInstruction(X86Instruction.NEGATION, bitSize))
+                .append(" ")
+                .append(formatInstructionParameter(destinationRegister, bitSize))
+                .append(NEW_LINE);
+        return this;
+    }
+
+    public X86InstructionGenerator generateUnconditionalJumpInstruction(String label, BitSize bitSize) {
+        generateIndentationSpace();
+        builder.append(formatter.formatInstruction(X86Instruction.UNCONDITIONAL_JUMP, bitSize))
+                .append(" ")
+                .append(label)
+                .append(NEW_LINE);
+        return this;
+    }
+
+    public X86InstructionGenerator generateConditionalJumpInstruction(X86ConditionCode conditionCode, String label, BitSize bitSize) {
+        generateIndentationSpace();
+        builder.append(formatter.formatInstruction(X86Instruction.CONDITIONAL_JUMP, bitSize))
+                .append(formatter.formatConditionCode(conditionCode))
+                .append(" ")
+                .append(label)
+                .append(NEW_LINE);
+        return this;
+    }
+
     public X86InstructionGenerator generateFromString(String instruction) {
         generateIndentationSpace();
         builder.append(instruction)
