@@ -3,6 +3,8 @@ package edu.kit.kastel.vads.compiler.pipeline;
 import edu.kit.kastel.vads.compiler.frontend.semantic.hir.TypedFile;
 import edu.kit.kastel.vads.compiler.ir.IrGraph;
 import edu.kit.kastel.vads.compiler.ir.SsaTranslation;
+import edu.kit.kastel.vads.compiler.ir.data.IrFile;
+import edu.kit.kastel.vads.compiler.ir.data.IrFunctionPrinter;
 import edu.kit.kastel.vads.compiler.ir.data.SsaConstruction;
 import edu.kit.kastel.vads.compiler.ir.data.SsaConstructionContext;
 import edu.kit.kastel.vads.compiler.ir.optimize.LocalValueNumbering;
@@ -26,6 +28,7 @@ public class IRStep {
 
     public void run(TypedFile typedFile) {
         SsaConstruction construction = new SsaConstruction();
-        construction.generateIr(typedFile);
+        IrFile irFile = construction.generateIr(typedFile);
+        new IrFunctionPrinter().print(irFile);
     }
 }

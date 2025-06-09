@@ -5,14 +5,20 @@ import java.util.Collections;
 import java.util.List;
 
 public final class IrBlock {
+    private final String name;
     private final List<IrBlock> predecessorBlocks;
     private final List<IrBlock> successorBlocks;
     private final List<IrInstruction> instructions;
 
-    public IrBlock() {
+    public IrBlock(String name) {
+        this.name = name;
         predecessorBlocks = new ArrayList<>();
         successorBlocks = new ArrayList<>();
         instructions = new ArrayList<>();
+    }
+
+    public String name() {
+        return name;
     }
 
     public List<IrBlock> getPredecessorBlocks() {

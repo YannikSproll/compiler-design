@@ -10,6 +10,8 @@ public class SsaConstructionContext {
     private SSAVariableRenameRecording globalVariableNameRecording;
     private Map<IrBlock, SSAVariableRenameRecording> recordingsByBlocks;
     private Stack<LoopContext> loopContexts = new Stack<>();
+    private String functionName;
+    private int blockCounter = 0;
     private int ssaValueNameCounter = 0;
 
     public SsaConstructionContext() {
@@ -17,11 +19,15 @@ public class SsaConstructionContext {
         this.blocks = new ArrayList<>();
         this.globalVariableNameRecording = new SSAVariableRenameRecording();
         this.loopContexts = new Stack<>();
+        this.functionName = null;
         this.recordingsByBlocks = new HashMap<>();
     }
 
-    public IrBlock beginFunction() {
-        IrBlock startBlock = newCurrentBlock();
+    public IrBlock beginFunction(String name) {
+        this.functionName = name;
+        blockCounter = 0;
+        IrBlock startBlock = createBlock("start");
+        newCurrentBlock(startBlock);
         ssaValueNameCounter = 0;
         globalVariableNameRecording.clear();
         recordingsByBlocks.clear();
@@ -32,8 +38,16 @@ public class SsaConstructionContext {
         return currentBlock;
     }
 
-    public IrBlock newCurrentBlock() {
-        currentBlock = new IrBlock();
+    public IrBlock createBlock(String role) {
+        return new IrBlock(getBlockName(role));
+    }
+
+    private String getBlockName(String role) {
+        return functionName + "_" + role + "_" + blockCounter++;
+    }
+
+    public IrBlock newCurrentBlock(String role) {
+        currentBlock = createBlock(role);
         blocks.add(currentBlock);
         return currentBlock;
     }

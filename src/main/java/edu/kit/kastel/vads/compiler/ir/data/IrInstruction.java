@@ -1,4 +1,6 @@
 package edu.kit.kastel.vads.compiler.ir.data;
 
-public interface IrInstruction {
+import edu.kit.kastel.vads.compiler.ir.data.ValueProducingInstructions.IrValueProducingInstruction;
+
+public sealed interface IrInstruction permits IrValueProducingInstruction, IrJumpInstruction, IrBranchInstruction, IrReturnInstruction {
 }

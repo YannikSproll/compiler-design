@@ -89,9 +89,9 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
     public SSAConstructionResult visit(TypedConditionalExpression conditionalExpression, SsaConstructionContext context) {
         SSAConstructionResult conditionResult = conditionalExpression.conditionExpression().accept(this, context);
 
-        IrBlock thenBlock = new IrBlock();
-        IrBlock fBlock = new IrBlock();
-        IrBlock elseBlock = new IrBlock();
+        IrBlock thenBlock = context.createBlock("if_then");
+        IrBlock fBlock = context.createBlock("if_merge");
+        IrBlock elseBlock = context.createBlock("if_else");
 
         generateBranchInstruction(conditionResult.asSSAValue(), context.currentBlock(), thenBlock, elseBlock);
 
@@ -153,7 +153,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
 
     @Override
     public SSAConstructionResult visit(TypedFunction function, SsaConstructionContext context) {
-        IrBlock startBlock = context.beginFunction();
+        IrBlock startBlock = context.beginFunction(function.symbol().name());
         function.body().accept(this, context);
 
         IrFunction irFunction = new IrFunction(startBlock, context.blocks());
@@ -166,14 +166,14 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
         SSAConstructionResult conditionResult = ifStatement.conditionExpression().accept(this, context);
 
         IrBlock conditionBlock = context.currentBlock();
-        IrBlock thenBlock = new IrBlock();
-        IrBlock fBlock = new IrBlock();
+        IrBlock thenBlock = new IrBlock("if_then");
+        IrBlock fBlock = new IrBlock("if_merge");
 
         Map<Symbol, SSAValue> elseValues;
         Map<Symbol, SSAValue> thenValues;
 
         if (ifStatement.elseStatement().isPresent()) {
-            IrBlock elseBlock = new IrBlock();
+            IrBlock elseBlock = new IrBlock("if_else");
 
             generateBranchInstruction(conditionResult.asSSAValue(), context.currentBlock(), thenBlock, elseBlock);
 
@@ -292,10 +292,10 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
 
     @Override
     public SSAConstructionResult visit(TypedLoop loop, SsaConstructionContext context) {
-        IrBlock bodyBlock = new IrBlock();
-        IrBlock postIterationStatementBlock = new IrBlock();
-        IrBlock conditionEvaluationBlock = new IrBlock();
-        IrBlock loopExitBlock = new IrBlock();
+        IrBlock bodyBlock = new IrBlock("loop_body");
+        IrBlock postIterationStatementBlock = new IrBlock("loop_post_iteration");
+        IrBlock conditionEvaluationBlock = new IrBlock("loop_condition");
+        IrBlock loopExitBlock = new IrBlock("loop_exit");
 
         LoopContext loopContext = new LoopContext(
                 loop.postIterationStatement().isPresent() ? postIterationStatementBlock : conditionEvaluationBlock,
