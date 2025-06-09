@@ -166,14 +166,14 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
         SSAConstructionResult conditionResult = ifStatement.conditionExpression().accept(this, context);
 
         IrBlock conditionBlock = context.currentBlock();
-        IrBlock thenBlock = new IrBlock("if_then");
-        IrBlock fBlock = new IrBlock("if_merge");
+        IrBlock thenBlock = context.createBlock("if_then");
+        IrBlock fBlock = context.createBlock("if_merge");
 
         Map<Symbol, SSAValue> elseValues;
         Map<Symbol, SSAValue> thenValues;
 
         if (ifStatement.elseStatement().isPresent()) {
-            IrBlock elseBlock = new IrBlock("if_else");
+            IrBlock elseBlock = context.createBlock("if_else");
 
             generateBranchInstruction(conditionResult.asSSAValue(), context.currentBlock(), thenBlock, elseBlock);
 
@@ -292,10 +292,10 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
 
     @Override
     public SSAConstructionResult visit(TypedLoop loop, SsaConstructionContext context) {
-        IrBlock bodyBlock = new IrBlock("loop_body");
-        IrBlock postIterationStatementBlock = new IrBlock("loop_post_iteration");
-        IrBlock conditionEvaluationBlock = new IrBlock("loop_condition");
-        IrBlock loopExitBlock = new IrBlock("loop_exit");
+        IrBlock bodyBlock = context.createBlock("loop_body");
+        IrBlock postIterationStatementBlock = context.createBlock("loop_post_iteration");
+        IrBlock conditionEvaluationBlock = context.createBlock("loop_condition");
+        IrBlock loopExitBlock = context.createBlock("loop_exit");
 
         LoopContext loopContext = new LoopContext(
                 loop.postIterationStatement().isPresent() ? postIterationStatementBlock : conditionEvaluationBlock,

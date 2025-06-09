@@ -149,7 +149,7 @@ public class IrFunctionPrinter {
                         .append("negate ").append(irNegateInstruction.src().name());
                 break;
             case IrPhi irPhi:
-                builder.append(INDENT).append(irPhi.target().name()).append(ASSIGN);
+                builder.append(INDENT).append(irPhi.target().name()).append(ASSIGN).append("phi").append(SPACE);
                 for (IrPhi.IrPhiItem item : irPhi.sources()) {
                     builder.append("[").append(item.value().name()).append(", ")
                             .append(item.block().name()).append("]").append(", ");
@@ -157,7 +157,6 @@ public class IrFunctionPrinter {
                 if (!irPhi.sources().isEmpty()) {
                     builder.delete(builder.length() - 2, builder.length());
                 }
-                builder.append(")");
                 break;
             case IrRightShiftInstruction irRightShiftInstruction:
                 builder.append(INDENT).append(irRightShiftInstruction.target().name()).append(ASSIGN)
