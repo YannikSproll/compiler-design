@@ -4,7 +4,9 @@ import edu.kit.kastel.vads.compiler.frontend.semantic.hir.*;
 import edu.kit.kastel.vads.compiler.ir.data.ValueProducingInstructions.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class SsaConstruction implements TypedResultVisitor<SsaConstructionContext, SSAConstructionResult> {
 
@@ -15,15 +17,15 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
     }
 
     @Override
-    public SSAConstructionResult visit(TypedAssignment assignment, SsaConstructionContext ssaConstructionContext) {
-        SSAConstructionResult result = assignment.initializer().accept(this, ssaConstructionContext);
+    public SSAConstructionResult visit(TypedAssignment assignment, SsaConstructionContext context) {
+        SSAConstructionResult result = assignment.initializer().accept(this, context);
 
         IrMoveInstruction moveInstruction = new IrMoveInstruction(
-                ssaConstructionContext.generateNewSSAValue(),
+                context.generateNewSSAValue(),
                 result.asSSAValue());
 
-        ssaConstructionContext.currentBlock().addInstruction(moveInstruction);
-        ssaConstructionContext.introduceNewSSAValue(
+        context.currentBlock().addInstruction(moveInstruction);
+        context.introduceNewSSAValue(
                 assignment.lValue().asVariable().symbol(),
                 moveInstruction.target());
 
@@ -31,11 +33,11 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
     }
 
     @Override
-    public SSAConstructionResult visit(TypedBinaryOperation operation, SsaConstructionContext ssaConstructionContext) {
-        SSAConstructionResult lExpResult = operation.lhsExpression().accept(this, ssaConstructionContext);
-        SSAConstructionResult rExpResult = operation.rhsExpression().accept(this, ssaConstructionContext);
+    public SSAConstructionResult visit(TypedBinaryOperation operation, SsaConstructionContext context) {
+        SSAConstructionResult lExpResult = operation.lhsExpression().accept(this, context);
+        SSAConstructionResult rExpResult = operation.rhsExpression().accept(this, context);
 
-        SSAValue targetValue = ssaConstructionContext.generateNewSSAValue();
+        SSAValue targetValue = context.generateNewSSAValue();
         IrValueProducingInstruction instruction = switch (operation.operator()) {
             case ADD -> new IrAddInstruction(targetValue, lExpResult.asSSAValue(), rExpResult.asSSAValue());
             case SUBTRACT -> new IrSubInstruction(targetValue, lExpResult.asSSAValue(), rExpResult.asSSAValue());
@@ -55,66 +57,93 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
             case BITWISE_XOR -> new IrBitwiseXorInstruction(targetValue, lExpResult.asSSAValue(), rExpResult.asSSAValue());
         };
 
-        ssaConstructionContext.currentBlock().addInstruction(instruction);
+        context.currentBlock().addInstruction(instruction);
 
         return SSAConstructionResult.ssaValue(instruction.target());
     }
 
     @Override
-    public SSAConstructionResult visit(TypedBlock block, SsaConstructionContext ssaConstructionContext) {
+    public SSAConstructionResult visit(TypedBlock block, SsaConstructionContext context) {
         for (TypedStatement statement : block.statements()) {
-            statement.accept(this, ssaConstructionContext);
+            statement.accept(this, context);
         }
         return SSAConstructionResult.empty();
     }
 
     @Override
-    public SSAConstructionResult visit(TypedBoolLiteral literal, SsaConstructionContext ssaConstructionContext) {
+    public SSAConstructionResult visit(TypedBoolLiteral literal, SsaConstructionContext context) {
         IrBoolConstantInstruction boolConstantInstruction = new IrBoolConstantInstruction(
-                ssaConstructionContext.generateNewSSAValue(),
+                context.generateNewSSAValue(),
                 literal.value());
-        ssaConstructionContext.currentBlock().addInstruction(boolConstantInstruction);
+        context.currentBlock().addInstruction(boolConstantInstruction);
         return SSAConstructionResult.ssaValue(boolConstantInstruction.target());
     }
 
     @Override
-    public SSAConstructionResult visit(TypedBreak breakStatement, SsaConstructionContext ssaConstructionContext) {
+    public SSAConstructionResult visit(TypedBreak breakStatement, SsaConstructionContext context) {
+        generateJumpInstruction(context.currentBlock(), context.getLoopContext().exitLoopBlock());
         return SSAConstructionResult.empty();
     }
 
     @Override
-    public SSAConstructionResult visit(TypedConditionalExpression conditionalExpression, SsaConstructionContext ssaConstructionContext) {
+    public SSAConstructionResult visit(TypedConditionalExpression conditionalExpression, SsaConstructionContext context) {
+        SSAConstructionResult conditionResult = conditionalExpression.conditionExpression().accept(this, context);
+
+        IrBlock thenBlock = new IrBlock();
+        IrBlock fBlock = new IrBlock();
+        IrBlock elseBlock = new IrBlock();
+
+        generateBranchInstruction(conditionResult.asSSAValue(), context.currentBlock(), thenBlock, elseBlock);
+
+
+        context.newCurrentBlock(elseBlock);
+        SSAConstructionResult elseResult = conditionalExpression.elseExpression().accept(this, context);
+        generateJumpInstruction(context.currentBlock(), fBlock);
+
+        context.newCurrentBlock(thenBlock);
+        SSAConstructionResult thenResult = conditionalExpression.thenExpression().accept(this, context);
+        generateJumpInstruction(context.currentBlock(), fBlock);
+
+        context.newCurrentBlock(fBlock);
+        IrPhi phi = new IrPhi(
+                context.generateNewSSAValue(),
+                List.of(
+                        new IrPhi.IrPhiItem(elseResult.asSSAValue(), elseBlock),
+                        new IrPhi.IrPhiItem(thenResult.asSSAValue(), thenBlock)
+                ));
+        context.currentBlock().addInstruction(phi);
+
+        return SSAConstructionResult.ssaValue(phi.target());
+    }
+
+    @Override
+    public SSAConstructionResult visit(TypedContinue continueStatement, SsaConstructionContext context) {
+        generateJumpInstruction(context.currentBlock(), context.getLoopContext().reevaluateConditionBlock());
         return SSAConstructionResult.empty();
     }
 
     @Override
-    public SSAConstructionResult visit(TypedContinue continueStatement, SsaConstructionContext ssaConstructionContext) {
-        return SSAConstructionResult.empty();
-    }
-
-    @Override
-    public SSAConstructionResult visit(TypedDeclaration declaration, SsaConstructionContext ssaConstructionContext) {
+    public SSAConstructionResult visit(TypedDeclaration declaration, SsaConstructionContext context) {
         if (declaration.initializer().isPresent()) {
-            SSAConstructionResult result = declaration.initializer().get().accept(this, ssaConstructionContext);
+            SSAConstructionResult result = declaration.initializer().get().accept(this, context);
 
-            // TODO:
             IrMoveInstruction moveInstruction = new IrMoveInstruction(
-                    ssaConstructionContext.generateNewSSAValue(),
+                    context.generateNewSSAValue(),
                     result.asSSAValue());
 
-            ssaConstructionContext.introduceNewSSAValue(declaration.symbol(), moveInstruction.target());
-            ssaConstructionContext.currentBlock().addInstruction(moveInstruction);
+            context.introduceNewSSAValue(declaration.symbol(), moveInstruction.target());
+            context.currentBlock().addInstruction(moveInstruction);
         }
 
         return SSAConstructionResult.empty();
     }
 
     @Override
-    public SSAConstructionResult visit(TypedFile file, SsaConstructionContext ssaConstructionContext) {
+    public SSAConstructionResult visit(TypedFile file, SsaConstructionContext context) {
         List<IrFunction> functions = new ArrayList<>();
 
         for (TypedFunction function : file.functions()) {
-            SSAConstructionResult result = function.accept(this, ssaConstructionContext);
+            SSAConstructionResult result = function.accept(this, context);
             functions.add(result.asFunction());
         }
 
@@ -123,65 +152,279 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
     }
 
     @Override
-    public SSAConstructionResult visit(TypedFunction function, SsaConstructionContext ssaConstructionContext) {
-        IrBlock startBlock = ssaConstructionContext.newCurrentBlock();
-        function.body().accept(this, ssaConstructionContext);
+    public SSAConstructionResult visit(TypedFunction function, SsaConstructionContext context) {
+        IrBlock startBlock = context.beginFunction();
+        function.body().accept(this, context);
 
-        IrFunction irFunction = new IrFunction(startBlock, ssaConstructionContext.blocks());
+        IrFunction irFunction = new IrFunction(startBlock, context.blocks());
 
         return SSAConstructionResult.function(irFunction);
     }
 
     @Override
-    public SSAConstructionResult visit(TypedIf ifStatement, SsaConstructionContext ssaConstructionContext) {
-        SSAConstructionResult conditionResult = ifStatement.conditionExpression().accept(this, ssaConstructionContext);
+    public SSAConstructionResult visit(TypedIf ifStatement, SsaConstructionContext context) {
+        SSAConstructionResult conditionResult = ifStatement.conditionExpression().accept(this, context);
+
+        IrBlock conditionBlock = context.currentBlock();
+        IrBlock thenBlock = new IrBlock();
+        IrBlock fBlock = new IrBlock();
+
+        Map<Symbol, SSAValue> elseValues;
+        Map<Symbol, SSAValue> thenValues;
+
+        if (ifStatement.elseStatement().isPresent()) {
+            IrBlock elseBlock = new IrBlock();
+
+            generateBranchInstruction(conditionResult.asSSAValue(), context.currentBlock(), thenBlock, elseBlock);
+
+            context.newCurrentBlock(elseBlock);
+            ifStatement.elseStatement().get().accept(this, context);
+            generateJumpInstruction(context.currentBlock(), fBlock);
+
+            elseValues = context.getLatestSSAValues(context.currentBlock());
+
+            context.newCurrentBlock(thenBlock);
+            ifStatement.thenStatement().accept(this, context);
+            generateJumpInstruction(context.currentBlock(), fBlock);
+
+            thenValues = context.getLatestSSAValues(context.currentBlock());
+
+            List<IrPhi> phis = createPhis(elseBlock, elseValues, thenBlock, thenValues, context);
+            context.newCurrentBlock(fBlock);
+            for (IrPhi phi : phis) {
+                context.currentBlock().addInstruction(phi);
+            }
+        } else {
+            generateBranchInstruction(conditionResult.asSSAValue(), context.currentBlock(), thenBlock, fBlock);
+
+            elseValues = context.getLatestSSAValues(context.currentBlock());
+
+            context.newCurrentBlock(thenBlock);
+            ifStatement.thenStatement().accept(this, context);
+            generateJumpInstruction(context.currentBlock(), fBlock);
+
+            thenValues = context.getLatestSSAValues(context.currentBlock());
+
+            List<IrPhi> phis = createPhis(conditionBlock, elseValues, thenBlock, thenValues, context);
+            context.newCurrentBlock(fBlock);
+            for (IrPhi phi : phis) {
+                context.currentBlock().addInstruction(phi);
+            }
+        }
+
         return SSAConstructionResult.empty();
     }
 
+    private static void generateJumpInstruction(IrBlock from, IrBlock to) {
+        IrJumpInstruction jumpInstruction = new IrJumpInstruction(to);
+        from.addInstruction(jumpInstruction);
+        from.addSuccessorBlock(to);
+    }
+
+    private static void generateBranchInstruction(SSAValue conditionValue, IrBlock from, IrBlock trueBranch, IrBlock falseBranch) {
+        IrBranchInstruction branchInstruction = new IrBranchInstruction(conditionValue, trueBranch, falseBranch);
+        from.addInstruction(branchInstruction);
+        from.addSuccessorBlock(trueBranch);
+        from.addSuccessorBlock(falseBranch);
+    }
+
+    private static List<IrPhi> createPhis(
+            IrBlock firstBlock, Map<Symbol, SSAValue> firstBlockReassignments,
+            IrBlock secondBlock, Map<Symbol, SSAValue> secondBlockReassignments,
+            SsaConstructionContext context) {
+        ArrayList<IrPhi> phis = new ArrayList<>();
+
+        for (Map.Entry<Symbol, SSAValue> entry : firstBlockReassignments.entrySet()) {
+            Symbol currentSymbol = entry.getKey();
+            if (secondBlockReassignments.containsKey(currentSymbol)) {
+                SSAValue phiTargetValue = context.generateNewSSAValue();
+                context.introduceNewSSAValue(currentSymbol, phiTargetValue);
+
+                IrPhi phi = new IrPhi(
+                        phiTargetValue,
+                        List.of(
+                                new IrPhi.IrPhiItem(firstBlockReassignments.get(currentSymbol), firstBlock),
+                                new IrPhi.IrPhiItem(secondBlockReassignments.get(currentSymbol), secondBlock)
+                        ));
+                phis.add(phi);
+            }
+        }
+
+        return phis;
+    }
+
+    private static List<IrPhi> createPhis(
+            Map<Symbol, ValueBlockPair> firstBlockReassignments,
+            IrBlock secondBlock, Map<Symbol, SSAValue> secondBlockReassignments,
+            SsaConstructionContext context) {
+        ArrayList<IrPhi> phis = new ArrayList<>();
+
+        for (Map.Entry<Symbol, ValueBlockPair> entry : firstBlockReassignments.entrySet()) {
+            Symbol currentSymbol = entry.getKey();
+            if (secondBlockReassignments.containsKey(currentSymbol)) {
+                SSAValue phiTargetValue = context.generateNewSSAValue();
+                context.introduceNewSSAValue(currentSymbol, phiTargetValue);
+
+                IrPhi phi = new IrPhi(
+                        phiTargetValue,
+                        List.of(
+                                new IrPhi.IrPhiItem(
+                                        firstBlockReassignments.get(currentSymbol).value(),
+                                        firstBlockReassignments.get(currentSymbol).createdIn()),
+                                new IrPhi.IrPhiItem(secondBlockReassignments.get(currentSymbol), secondBlock)
+                        ));
+                phis.add(phi);
+            }
+        }
+
+        return phis;
+    }
+
     @Override
-    public SSAConstructionResult visit(TypedIntLiteral literal, SsaConstructionContext ssaConstructionContext) {
+    public SSAConstructionResult visit(TypedIntLiteral literal, SsaConstructionContext context) {
         IrIntConstantInstruction constantInstruction = new IrIntConstantInstruction(
-                ssaConstructionContext.generateNewSSAValue(),
+                context.generateNewSSAValue(),
                 literal.value());
-        ssaConstructionContext.currentBlock().addInstruction(constantInstruction);
+        context.currentBlock().addInstruction(constantInstruction);
 
         return SSAConstructionResult.ssaValue(constantInstruction.target());
     }
 
     @Override
-    public SSAConstructionResult visit(TypedLoop loop, SsaConstructionContext ssaConstructionContext) {
+    public SSAConstructionResult visit(TypedLoop loop, SsaConstructionContext context) {
+        IrBlock bodyBlock = new IrBlock();
+        IrBlock postIterationStatementBlock = new IrBlock();
+        IrBlock conditionEvaluationBlock = new IrBlock();
+        IrBlock loopExitBlock = new IrBlock();
+
+        LoopContext loopContext = new LoopContext(
+                loop.postIterationStatement().isPresent() ? postIterationStatementBlock : conditionEvaluationBlock,
+                loopExitBlock);
+        context.enterLoop(loopContext);
+
+        // Generate skip loop if condition is false initially
+        SSAConstructionResult headerConditionResult = loop.conditionExpression().accept(this, context);
+
+        generateBranchInstruction(headerConditionResult.asSSAValue(), context.currentBlock(), bodyBlock, loopExitBlock);
+
+        IrBlock preLoopBlock = context.currentBlock();
+        Map<Symbol, SSAValue> preLoopValues = context.getLatestSSAValues(preLoopBlock);
+
+        // Generate body block
+        context.newCurrentBlock(bodyBlock);
+        loop.body().accept(this, context);
+
+        List<IrPhi> phis;
+
+        if (loop.postIterationStatement().isPresent()) {
+            generateJumpInstruction(context.currentBlock(), postIterationStatementBlock);
+
+            Map<Symbol, SSAValue> bodyValues = context.getLatestSSAValues(bodyBlock);
+
+            //Add post iteration statement block if post iteration statement is present
+            context.newCurrentBlock(postIterationStatementBlock);
+            loop.postIterationStatement().get().accept(this, context);
+            generateJumpInstruction(context.currentBlock(), conditionEvaluationBlock);
+
+            Map<Symbol, SSAValue> postIterationValues = context.getLatestSSAValues(postIterationStatementBlock);
+
+            Map<Symbol, ValueBlockPair> updatedSSAValues = updateSSAValuesIfPresent(
+                    bodyValues, bodyBlock,
+                    postIterationValues, postIterationStatementBlock);
+
+            phis = createPhis(updatedSSAValues, preLoopBlock, preLoopValues, context);
+
+        } else {
+            generateJumpInstruction(context.currentBlock(), conditionEvaluationBlock);
+
+            Map<Symbol, SSAValue> bodyValues = context.getLatestSSAValues(bodyBlock);
+
+            phis = createPhis(
+                    bodyBlock, bodyValues,
+                    preLoopBlock, preLoopValues,
+                    context);
+        }
+
+        // Generate the condition evaluation block
+        context.newCurrentBlock(conditionEvaluationBlock);
+        SSAConstructionResult bottomConstructionResult = loop.conditionExpression().accept(this, context);
+        generateBranchInstruction(bottomConstructionResult.asSSAValue(), context.currentBlock(), bodyBlock, loopExitBlock);
+
+        for (IrPhi phi : phis.reversed()) {
+            // Insert phis to the begin of the body block
+            bodyBlock.insertInstruction(0, phi);
+        }
+
+        context.exitLoop(loopContext);
+
+        // Prepare the block for further instructions
+        context.newCurrentBlock(loopExitBlock);
 
         return SSAConstructionResult.empty();
     }
 
+    record ValueBlockPair(SSAValue value, IrBlock createdIn) {}
+
+    private Map<Symbol, ValueBlockPair> updateSSAValuesIfPresent(
+            Map<Symbol, SSAValue> baseValues,
+            IrBlock baseValueBlock,
+            Map<Symbol, SSAValue> potentialNewerValues,
+            IrBlock potentialNewerValuesBlock) {
+        Map<Symbol, ValueBlockPair> updatedValues = new HashMap<>();
+
+        // Update reassignments in baseValues
+        for (Map.Entry<Symbol, SSAValue> entry : baseValues.entrySet()) {
+            if (!potentialNewerValues.containsKey(entry.getKey())) {
+                updatedValues.put(
+                        entry.getKey(),
+                        new ValueBlockPair(
+                                entry.getValue(), baseValueBlock));
+            } else {
+                updatedValues.put(
+                        entry.getKey(),
+                        new ValueBlockPair(
+                                potentialNewerValues.get(entry.getKey()), potentialNewerValuesBlock));
+            }
+        }
+
+        // Add remaining values of potential updates
+        for (Map.Entry<Symbol, SSAValue> entry : potentialNewerValues.entrySet()) {
+            if (!updatedValues.containsKey(entry.getKey())) {
+                updatedValues.put(entry.getKey(), new ValueBlockPair(entry.getValue(), potentialNewerValuesBlock));
+            }
+        }
+
+        return updatedValues;
+    }
+
     @Override
-    public SSAConstructionResult visit(TypedReturn returnStatement, SsaConstructionContext ssaConstructionContext) {
-        SSAConstructionResult result = returnStatement.returnExpression().accept(this, ssaConstructionContext);
+    public SSAConstructionResult visit(TypedReturn returnStatement, SsaConstructionContext context) {
+        SSAConstructionResult result = returnStatement.returnExpression().accept(this, context);
         IrReturnInstruction returnInstruction = new IrReturnInstruction(result.asSSAValue());
 
-        ssaConstructionContext.currentBlock().addInstruction(returnInstruction);
+        context.currentBlock().addInstruction(returnInstruction);
 
         return SSAConstructionResult.empty();
     }
 
     @Override
-    public SSAConstructionResult visit(TypedUnaryOperation operation, SsaConstructionContext ssaConstructionContext) {
-        SSAConstructionResult result = operation.expression().accept(this, ssaConstructionContext);
+    public SSAConstructionResult visit(TypedUnaryOperation operation, SsaConstructionContext context) {
+        SSAConstructionResult result = operation.expression().accept(this, context);
 
-        SSAValue targetValue = ssaConstructionContext.generateNewSSAValue();
+        SSAValue targetValue = context.generateNewSSAValue();
         IrValueProducingInstruction instruction = switch(operation.operator()) {
             case BITWISE_NOT -> new IrBitwiseNotInstruction(targetValue, result.asSSAValue());
             case NEGATION -> new IrNegateInstruction(targetValue, result.asSSAValue());
             case LOGICAL_NOT -> new IrLogicalNotInstruction(targetValue, result.asSSAValue());
         };
 
-        ssaConstructionContext.currentBlock().addInstruction(instruction);
+        context.currentBlock().addInstruction(instruction);
 
         return SSAConstructionResult.ssaValue(targetValue);
     }
 
     @Override
-    public SSAConstructionResult visit(TypedVariable variable, SsaConstructionContext ssaConstructionContext) {
-        return SSAConstructionResult.ssaValue(ssaConstructionContext.getLatestSSAValue(variable.symbol()));
+    public SSAConstructionResult visit(TypedVariable variable, SsaConstructionContext context) {
+        return SSAConstructionResult.ssaValue(context.getLatestSSAValue(variable.symbol()));
     }
 }

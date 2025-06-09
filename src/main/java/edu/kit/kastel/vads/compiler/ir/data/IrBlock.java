@@ -1,6 +1,7 @@
 package edu.kit.kastel.vads.compiler.ir.data;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public final class IrBlock {
@@ -15,24 +16,36 @@ public final class IrBlock {
     }
 
     public List<IrBlock> getPredecessorBlocks() {
-        return predecessorBlocks;
+        return Collections.unmodifiableList(predecessorBlocks);
     }
     public List<IrBlock> getSuccessorBlocks() {
-        return successorBlocks;
+        return Collections.unmodifiableList(successorBlocks);
     }
     public List<IrInstruction> getInstructions() {
-        return instructions;
+        return Collections.unmodifiableList(instructions);
     }
 
-    public void addPredecessorBlock(IrBlock predecessorBlock) {
-        predecessorBlocks.add(predecessorBlock);
+    private void addPredecessor(IrBlock predecessorBlock) {
+        if (!predecessorBlocks.contains(predecessorBlock)) {
+            predecessorBlocks.add(predecessorBlock);
+        }
     }
 
     public void addSuccessorBlock(IrBlock successorBlock) {
-        successorBlocks.add(successorBlock);
+        addSuccessor(successorBlock);
+        successorBlock.addPredecessor(this);
+    }
+
+    private void addSuccessor(IrBlock successorBlock) {
+        if (!successorBlocks.contains(successorBlock)) {
+            successorBlocks.add(successorBlock);
+        }
     }
 
     public void addInstruction(IrInstruction instruction) {
         instructions.add(instruction);
+    }
+    public void insertInstruction(int index, IrInstruction instruction) {
+        instructions.add(index, instruction);
     }
 }
