@@ -11,7 +11,14 @@ import static edu.kit.kastel.vads.compiler.ir.util.NodeSupport.predecessorSkipPr
 
 public final class LivenessAnalysis {
 
-    public void run(IrFunction function) {
+    public Map<IrInstruction, Set<SSAValue>> run(IrFunction function) {
+        Map<IrBlock, BlockAnalysisResults> blockAnalysisResults = analyzeBlockLevelLiveness(function);
+
+        Map<IrInstruction, Set<SSAValue>> instructionLevelResults = analyzeInstructionLevelLiveness(function, blockAnalysisResults);
+        return instructionLevelResults;
+    }
+
+    private Map<IrBlock, BlockAnalysisResults> analyzeBlockLevelLiveness(IrFunction function) {
         Map<IrBlock, BlockAnalysisResults> blockAnalysisResults = new HashMap<>();
         for (IrBlock block : function.blocks()) {
             generateUseAndDefSets(block, blockAnalysisResults);
@@ -22,6 +29,8 @@ public final class LivenessAnalysis {
         }
 
         generateInAndOutSets(function.blocks(), blockAnalysisResults);
+
+        return blockAnalysisResults;
     }
 
     private void generateInAndOutSets(Collection<IrBlock> blocks, Map<IrBlock, BlockAnalysisResults> blockAnalysisResults) {
@@ -145,6 +154,41 @@ public final class LivenessAnalysis {
             values.add(value);
         }
     }
+
+    private Map<IrInstruction, Set<SSAValue>> analyzeInstructionLevelLiveness(IrFunction function, Map<IrBlock, BlockAnalysisResults> blockLevelResults) {
+        Map<IrInstruction, Set<SSAValue>> instructionLevelResults = new HashMap<>();
+        for (IrBlock block : function.blocks()) {
+            analyzeInstructionLiveness(block, blockLevelResults, instructionLevelResults);
+        }
+
+        return instructionLevelResults;
+    }
+
+    private void analyzeInstructionLiveness(
+            IrBlock block,
+            Map<IrBlock, BlockAnalysisResults> blockResults,
+            Map<IrInstruction, Set<SSAValue>> instructionLiveness) {
+        Set<SSAValue> liveOut = blockResults.get(block).out();
+
+        Set<SSAValue> usedByInstruction = new HashSet<>();
+        Set<SSAValue> definedByInstruction = new HashSet<>();
+
+        for (IrInstruction instruction : block.getInstructions().reversed()) {
+            addUsedAndDefinedSSAValues(instruction, usedByInstruction, definedByInstruction);
+
+            HashSet<SSAValue> liveIn = new HashSet<>(liveOut);
+            liveIn.removeAll(definedByInstruction);
+            liveIn.addAll(usedByInstruction);
+
+            instructionLiveness.put(instruction, liveIn);
+
+            liveOut = liveIn;
+
+            usedByInstruction.clear();
+            definedByInstruction.clear();
+        }
+    }
+
 
     public LivenessAnalysisResult analyzeLiveness(NodeSequence nodeSequence) {
         HashMap<Node, Set<Node>> liveNodes = new HashMap<>();
