@@ -2,20 +2,11 @@ package edu.kit.kastel.vads.compiler.backend.aasm;
 
 import edu.kit.kastel.vads.compiler.ir.data.IrBlock;
 import edu.kit.kastel.vads.compiler.ir.data.IrInstruction;
-import edu.kit.kastel.vads.compiler.ir.data.IrReturnInstruction;
 import edu.kit.kastel.vads.compiler.ir.data.SSAValue;
-import edu.kit.kastel.vads.compiler.ir.data.ValueProducingInstructions.IrBinaryOperationInstruction;
-import edu.kit.kastel.vads.compiler.ir.data.ValueProducingInstructions.IrBoolConstantInstruction;
-import edu.kit.kastel.vads.compiler.ir.data.ValueProducingInstructions.IrIntConstantInstruction;
 import edu.kit.kastel.vads.compiler.ir.data.ValueProducingInstructions.IrValueProducingInstruction;
-import edu.kit.kastel.vads.compiler.ir.node.BinaryOperationNode;
-import edu.kit.kastel.vads.compiler.ir.node.ConstIntNode;
-import edu.kit.kastel.vads.compiler.ir.node.Node;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static edu.kit.kastel.vads.compiler.ir.util.NodeSupport.predecessorSkipProj;
 
 public final class InterferenceGraph {
     private final Map<SSAValue, HashSet<SSAValue>> adjacencyList;

@@ -1,6 +1,8 @@
 package edu.kit.kastel.vads.compiler.backend.aasm;
 
+import edu.kit.kastel.vads.compiler.ir.data.IrBranchInstruction;
 import edu.kit.kastel.vads.compiler.ir.data.IrInstruction;
+import edu.kit.kastel.vads.compiler.ir.data.IrJumpInstruction;
 import edu.kit.kastel.vads.compiler.ir.data.IrReturnInstruction;
 import edu.kit.kastel.vads.compiler.ir.data.ValueProducingInstructions.*;
 import edu.kit.kastel.vads.compiler.ir.node.*;
@@ -82,6 +84,78 @@ public final class DebugCodeGeneratorDecorator implements CodeGenerator {
     }
 
     @Override
+    public void generateLeftShift(RegisterAllocationResult allocationResult, IrLeftShiftInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateLeftShift(allocationResult, instruction);
+    }
+
+    @Override
+    public void generateRightShift(RegisterAllocationResult allocationResult, IrRightShiftInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateRightShift(allocationResult, instruction);
+    }
+
+    @Override
+    public void generateBitwiseAnd(RegisterAllocationResult allocationResult, IrBitwiseAndInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateBitwiseAnd(allocationResult, instruction);
+    }
+
+    @Override
+    public void generateBitwiseOr(RegisterAllocationResult allocationResult, IrBitwiseOrInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateBitwiseOr(allocationResult, instruction);
+    }
+
+    @Override
+    public void generateBitwiseNot(RegisterAllocationResult allocationResult, IrBitwiseNotInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateBitwiseNot(allocationResult, instruction);
+    }
+
+    @Override
+    public void generateBitwiseXor(RegisterAllocationResult allocationResult, IrBitwiseXorInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateBitwiseXor(allocationResult, instruction);
+    }
+
+    @Override
+    public void generateEquals(RegisterAllocationResult allocationResult, IrEqualsInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateEquals(allocationResult, instruction);
+    }
+
+    @Override
+    public void generateUnequals(RegisterAllocationResult allocationResult, IrUnequalsInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateUnequals(allocationResult, instruction);
+    }
+
+    @Override
+    public void generateGreaterThan(RegisterAllocationResult allocationResult, IrGreaterThanInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateGreaterThan(allocationResult, instruction);
+    }
+
+    @Override
+    public void generateLessThan(RegisterAllocationResult allocationResult, IrLessThanInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateLessThan(allocationResult, instruction);
+    }
+
+    @Override
+    public void generateGreaterThanOrEqual(RegisterAllocationResult allocationResult, IrGreaterThanOrEqualInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateGreaterThanOrEqual(allocationResult, instruction);
+    }
+
+    @Override
+    public void generateLessThanOrEqual(RegisterAllocationResult allocationResult, IrLessThanOrEqualInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateLessThanOrEqual(allocationResult, instruction);
+    }
+
+    @Override
     public void generateNegation(RegisterAllocationResult allocationResult, IrNegateInstruction instruction) {
         generateLineDebugging(instruction);
         codeGenerator.generateNegation(allocationResult, instruction);
@@ -91,6 +165,18 @@ public final class DebugCodeGeneratorDecorator implements CodeGenerator {
     public void generateReturn(RegisterAllocationResult allocationResult, IrReturnInstruction instruction) {
         generateLineDebugging(instruction);
         codeGenerator.generateReturn(allocationResult, instruction);
+    }
+
+    @Override
+    public void generateBranch(RegisterAllocationResult allocationResult, IrBranchInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateBranch(allocationResult, instruction);
+    }
+
+    @Override
+    public void generateJump(RegisterAllocationResult allocationResult, IrJumpInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateJump(allocationResult, instruction);
     }
 
     @Override

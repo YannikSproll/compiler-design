@@ -88,6 +88,7 @@ public class InstructionSelector {
     private void generateInstruction(IrInstruction instruction, CodeGenerator codeGenerator, RegisterAllocationResult allocationResult) {
         switch (instruction) {
             case IrJumpInstruction jump:
+                codeGenerator.generateJump(allocationResult, jump);
                 break;
             case IrReturnInstruction returnInstruction:
                 codeGenerator.generateReturn(allocationResult, returnInstruction);
@@ -98,32 +99,43 @@ public class InstructionSelector {
                 codeGenerator.generateAdd(allocationResult, addInstruction);
                 break;
             case IrBitwiseAndInstruction irBitwiseAndInstruction:
+                codeGenerator.generateBitwiseAnd(allocationResult, irBitwiseAndInstruction);
                 break;
             case IrBitwiseNotInstruction irBitwiseNotInstruction:
+                codeGenerator.generateBitwiseNot(allocationResult, irBitwiseNotInstruction);
                 break;
             case IrBitwiseOrInstruction irBitwiseOrInstruction:
+                codeGenerator.generateBitwiseOr(allocationResult, irBitwiseOrInstruction);
                 break;
             case IrBitwiseXorInstruction irBitwiseXorInstruction:
+                codeGenerator.generateBitwiseXor(allocationResult, irBitwiseXorInstruction);
                 break;
             case IrBoolConstantInstruction irBoolConstantInstruction:
+                codeGenerator.generateConstantInstruction(allocationResult, irBoolConstantInstruction);
                 break;
             case IrDivInstruction irDivInstruction:
                 codeGenerator.generateDiv(allocationResult, irDivInstruction);
                 break;
             case IrEqualsInstruction irEqualsInstruction:
+                codeGenerator.generateEquals(allocationResult, irEqualsInstruction);
                 break;
             case IrGreaterThanInstruction irGreaterThanInstruction:
+                codeGenerator.generateGreaterThan(allocationResult, irGreaterThanInstruction);
                 break;
             case IrGreaterThanOrEqualInstruction irGreaterThanOrEqualInstruction:
+                codeGenerator.generateGreaterThanOrEqual(allocationResult, irGreaterThanOrEqualInstruction);
                 break;
             case IrIntConstantInstruction irIntConstantInstruction:
                 codeGenerator.generateConstantInstruction(allocationResult, irIntConstantInstruction);
                 break;
             case IrLeftShiftInstruction irLeftShiftInstruction:
+                codeGenerator.generateLeftShift(allocationResult, irLeftShiftInstruction);
                 break;
             case IrLessThanInstruction irLessThanInstruction:
+                codeGenerator.generateLessThan(allocationResult, irLessThanInstruction);
                 break;
             case IrLessThanOrEqualInstruction irLessThanOrEqualInstruction:
+                codeGenerator.generateLessThanOrEqual(allocationResult, irLessThanOrEqualInstruction);
                 break;
             case IrLogicalNotInstruction irLogicalNotInstruction:
                 break;
@@ -140,33 +152,16 @@ public class InstructionSelector {
                 codeGenerator.generateNegation(allocationResult, irNegateInstruction);
                 break;
             case IrRightShiftInstruction irRightShiftInstruction:
+                codeGenerator.generateRightShift(allocationResult, irRightShiftInstruction);
                 break;
             case IrSubInstruction irSubInstruction:
                 codeGenerator.generateSub(allocationResult, irSubInstruction);
                 break;
             case IrUnequalsInstruction irUnequalsInstruction:
+                codeGenerator.generateUnequals(allocationResult, irUnequalsInstruction);
                 break;
             case IrPhi irPhi:
                 throw new IllegalArgumentException("Phi instruction is not supported");
         }
     }
-
-    private void generateInstructionForNode(Node node, CodeGenerator codeGenerator, RegisterAllocationResult allocationResult) {
-        /*switch (node) {
-            case AddNode add -> codeGenerator.generateAdd(allocationResult, add);
-            case SubNode sub -> codeGenerator.generateSub(allocationResult, sub);
-            case MulNode mul -> codeGenerator.generateMult(allocationResult, mul);
-            case DivNode div -> codeGenerator.generateDiv(allocationResult, div);
-            case ModNode mod -> codeGenerator.generateMod(allocationResult, mod);
-            case ReturnNode r -> codeGenerator.generateReturn(allocationResult, r);
-            case ConstIntNode c -> codeGenerator.generateConstantInstruction(allocationResult, c);
-            case Phi _ -> throw new UnsupportedOperationException("phi");
-            case Block _, ProjNode _, StartNode _ -> {
-                // do nothing, skip line break
-                return;
-            }
-        }*/
-    }
-
-
 }

@@ -1,6 +1,8 @@
 package edu.kit.kastel.vads.compiler.backend.aasm;
 
 import edu.kit.kastel.vads.compiler.backend.regalloc.Register;
+import edu.kit.kastel.vads.compiler.ir.data.IrBranchInstruction;
+import edu.kit.kastel.vads.compiler.ir.data.IrJumpInstruction;
 import edu.kit.kastel.vads.compiler.ir.data.IrReturnInstruction;
 import edu.kit.kastel.vads.compiler.ir.data.ValueProducingInstructions.*;
 import edu.kit.kastel.vads.compiler.ir.node.*;
@@ -148,8 +150,205 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateNegation(RegisterAllocationResult allocationResult, IrNegateInstruction instruction) {
+    public void generateLeftShift(RegisterAllocationResult allocationResult, IrLeftShiftInstruction instruction) {
+        Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
+        Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
+        Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
+        if (targetRegister instanceof StackSlot) {
+            instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateLeftShiftInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
+        } else {
+            if (rightOperandRegister == targetRegister) {
+                instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                        .generateLeftShiftInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                        .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
+            } else if (leftOperandRegister == targetRegister) {
+                instructionGenerator.generateLeftShiftInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
+            } else {
+                instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister, BitSize.BIT_32)
+                        .generateLeftShiftInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
+            }
+        }
+    }
+
+    @Override
+    public void generateRightShift(RegisterAllocationResult allocationResult, IrRightShiftInstruction instruction) {
+        Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
+        Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
+        Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
+
+        if (targetRegister instanceof StackSlot) {
+            instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateRightShiftInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
+        } else {
+            if (rightOperandRegister == targetRegister) {
+                instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                        .generateRightShiftInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                        .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
+            } else if (leftOperandRegister == targetRegister) {
+                instructionGenerator.generateRightShiftInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
+            } else {
+                instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister, BitSize.BIT_32)
+                        .generateRightShiftInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
+            }
+        }
+    }
+
+    @Override
+    public void generateBitwiseAnd(RegisterAllocationResult allocationResult, IrBitwiseAndInstruction instruction) {
+        Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
+        Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
+        Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
+
+        if (targetRegister instanceof StackSlot) {
+            instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateBitwiseAndInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
+        } else {
+            if (rightOperandRegister == targetRegister) {
+                instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                        .generateBitwiseAndInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                        .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
+            } else if (leftOperandRegister == targetRegister) {
+                instructionGenerator.generateBitwiseAndInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
+            } else {
+                instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister, BitSize.BIT_32)
+                        .generateBitwiseAndInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
+            }
+        }
+    }
+
+    @Override
+    public void generateBitwiseOr(RegisterAllocationResult allocationResult, IrBitwiseOrInstruction instruction) {
+        Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
+        Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
+        Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
+
+        if (targetRegister instanceof StackSlot) {
+            instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateBitwiseOrInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
+        } else {
+            if (rightOperandRegister == targetRegister) {
+                instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                        .generateBitwiseOrInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                        .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
+            } else if (leftOperandRegister == targetRegister) {
+                instructionGenerator.generateBitwiseOrInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
+            } else {
+                instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister, BitSize.BIT_32)
+                        .generateBitwiseOrInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
+            }
+        }
+    }
+
+    @Override
+    public void generateBitwiseNot(RegisterAllocationResult allocationResult, IrBitwiseNotInstruction instruction) {
+        Register sourceValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.src());
+        Register targetValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
+
+        if (sourceValueRegister != targetValueRegister) {
+            instructionGenerator.generateMoveInstruction(sourceValueRegister, targetValueRegister, BitSize.BIT_32);
+        }
+
+        instructionGenerator.generateBitwiseNotInstruction(targetValueRegister, BitSize.BIT_32);
+    }
+
+    @Override
+    public void generateBitwiseXor(RegisterAllocationResult allocationResult, IrBitwiseXorInstruction instruction) {
+        Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
+        Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
+        Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
+
+        if (targetRegister instanceof StackSlot) {
+            instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateBitwiseXorInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
+        } else {
+            if (rightOperandRegister == targetRegister) {
+                instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                        .generateBitwiseXorInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                        .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
+            } else if (leftOperandRegister == targetRegister) {
+                instructionGenerator.generateBitwiseXorInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
+            } else {
+                instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister, BitSize.BIT_32)
+                        .generateBitwiseXorInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
+            }
+        }
+    }
+
+    @Override
+    public void generateEquals(RegisterAllocationResult allocationResult, IrEqualsInstruction instruction) {
+        Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
+        Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
+        Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
+
+        instructionGenerator
+                .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, BitSize.BIT_32)
+                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.EQUAL, BitSize.BIT_32);
+    }
+
+    @Override
+    public void generateUnequals(RegisterAllocationResult allocationResult, IrUnequalsInstruction instruction) {
+        Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
+        Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
+        Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
+
+        instructionGenerator
+                .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, BitSize.BIT_32)
+                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.NOT_EQUAL, BitSize.BIT_32);
+    }
+
+    @Override
+    public void generateGreaterThan(RegisterAllocationResult allocationResult, IrGreaterThanInstruction instruction) {
+        Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
+        Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
+        Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
+
+        instructionGenerator
+                .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, BitSize.BIT_32)
+                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.GREATER_THAN, BitSize.BIT_32);
+    }
+
+    @Override
+    public void generateLessThan(RegisterAllocationResult allocationResult, IrLessThanInstruction instruction) {
+        Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
+        Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
+        Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
+
+        instructionGenerator
+                .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, BitSize.BIT_32)
+                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.LESS_THAN, BitSize.BIT_32);
+    }
+
+    @Override
+    public void generateGreaterThanOrEqual(RegisterAllocationResult allocationResult, IrGreaterThanOrEqualInstruction instruction) {
+        Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
+        Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
+        Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
+
+        instructionGenerator
+                .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, BitSize.BIT_32)
+                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.GREATER_THAN_OR_EQUAL, BitSize.BIT_32);
+    }
+
+    @Override
+    public void generateLessThanOrEqual(RegisterAllocationResult allocationResult, IrLessThanOrEqualInstruction instruction) {
+        Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
+        Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
+        Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
+
+        instructionGenerator
+                .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, BitSize.BIT_32)
+                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.LESS_THAN_OR_EQUAL, BitSize.BIT_32);
+    }
+
+    @Override
+    public void generateNegation(RegisterAllocationResult allocationResult, IrNegateInstruction instruction) {
         Register sourceValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.src());
         Register targetValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
@@ -175,6 +374,16 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         generateStackPointerPop();
 
         instructionGenerator.generateReturnInstruction();
+    }
+
+    @Override
+    public void generateBranch(RegisterAllocationResult allocationResult, IrBranchInstruction instruction) {
+        //instructionGenerator.generateConditionalJumpInstruction()
+    }
+
+    @Override
+    public void generateJump(RegisterAllocationResult allocationResult, IrJumpInstruction instruction) {
+        instructionGenerator.generateUnconditionalJumpInstruction(instruction.jumpTarget().name(), BitSize.BIT_64);
     }
 
     @Override
