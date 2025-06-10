@@ -301,7 +301,6 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
 
             Map<Symbol, SSAValue> postIterationValues = context.getLatestSSAValues(postIterationStatementBlock);
 
-            //TODO: merge ! with evaluation as other control flow source, then create phis
             Map<Symbol, SSAValue> updatedSSAValues = updateSSAValuesIfPresent(
                     bodyValues,
                     postIterationValues);
@@ -336,8 +335,6 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
 
         return SSAConstructionResult.empty();
     }
-
-    record ValueBlockPair(SSAValue value, IrBlock createdIn) {}
 
     private Map<Symbol, SSAValue> updateSSAValuesIfPresent(
             Map<Symbol, SSAValue> baseValues,
