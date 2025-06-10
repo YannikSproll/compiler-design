@@ -328,11 +328,12 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
 
             Map<Symbol, SSAValue> postIterationValues = context.getLatestSSAValues(postIterationStatementBlock);
 
-            Map<Symbol, ValueBlockPair> updatedSSAValues = updateSSAValuesIfPresent(
-                    bodyValues, bodyBlock,
-                    postIterationValues, postIterationStatementBlock);
+            //TODO: merge ! with evaluation as other control flow source, then create phis
+            Map<Symbol, SSAValue> updatedSSAValues = updateSSAValuesIfPresent(
+                    bodyValues,
+                    postIterationValues);
 
-            phis = createPhis(updatedSSAValues, preLoopBlock, preLoopValues, context);
+            phis = createPhis(conditionEvaluationBlock, updatedSSAValues, preLoopBlock, preLoopValues, context);
 
         } else {
             generateJumpInstruction(context.currentBlock(), conditionEvaluationBlock);
@@ -365,32 +366,20 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
 
     record ValueBlockPair(SSAValue value, IrBlock createdIn) {}
 
-    private Map<Symbol, ValueBlockPair> updateSSAValuesIfPresent(
+    private Map<Symbol, SSAValue> updateSSAValuesIfPresent(
             Map<Symbol, SSAValue> baseValues,
-            IrBlock baseValueBlock,
-            Map<Symbol, SSAValue> potentialNewerValues,
-            IrBlock potentialNewerValuesBlock) {
-        Map<Symbol, ValueBlockPair> updatedValues = new HashMap<>();
+            Map<Symbol, SSAValue> potentialNewerValues) {
+        Map<Symbol, SSAValue> updatedValues = new HashMap<>();
 
         // Update reassignments in baseValues
         for (Map.Entry<Symbol, SSAValue> entry : baseValues.entrySet()) {
-            if (!potentialNewerValues.containsKey(entry.getKey())) {
-                updatedValues.put(
-                        entry.getKey(),
-                        new ValueBlockPair(
-                                entry.getValue(), baseValueBlock));
-            } else {
-                updatedValues.put(
-                        entry.getKey(),
-                        new ValueBlockPair(
-                                potentialNewerValues.get(entry.getKey()), potentialNewerValuesBlock));
-            }
+            updatedValues.put(entry.getKey(), potentialNewerValues.getOrDefault(entry.getKey(), entry.getValue()));
         }
 
         // Add remaining values of potential updates
         for (Map.Entry<Symbol, SSAValue> entry : potentialNewerValues.entrySet()) {
             if (!updatedValues.containsKey(entry.getKey())) {
-                updatedValues.put(entry.getKey(), new ValueBlockPair(entry.getValue(), potentialNewerValuesBlock));
+                updatedValues.put(entry.getKey(), entry.getValue());
             }
         }
 
