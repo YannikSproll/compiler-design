@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Optional;
 
 final class ElaborationUtils {
+    static final String MAIN_FUNCTION_NAME = "main";
+
     static UnaryOperator mapUnaryOperator(Operator.OperatorType operatorType) {
         return switch (operatorType) {
             case Operator.OperatorType.MINUS -> UnaryOperator.NEGATION;

@@ -1,5 +1,12 @@
 package edu.kit.kastel.vads.compiler.backend.aasm;
 
+import edu.kit.kastel.vads.compiler.ir.data.IrBlock;
+import edu.kit.kastel.vads.compiler.ir.data.IrInstruction;
+import edu.kit.kastel.vads.compiler.ir.data.SSAValue;
+import edu.kit.kastel.vads.compiler.ir.data.ValueProducingInstructions.IrBinaryOperationInstruction;
+import edu.kit.kastel.vads.compiler.ir.data.ValueProducingInstructions.IrBoolConstantInstruction;
+import edu.kit.kastel.vads.compiler.ir.data.ValueProducingInstructions.IrIntConstantInstruction;
+import edu.kit.kastel.vads.compiler.ir.data.ValueProducingInstructions.IrValueProducingInstruction;
 import edu.kit.kastel.vads.compiler.ir.node.BinaryOperationNode;
 import edu.kit.kastel.vads.compiler.ir.node.ConstIntNode;
 import edu.kit.kastel.vads.compiler.ir.node.Node;
@@ -10,23 +17,23 @@ import java.util.stream.Collectors;
 import static edu.kit.kastel.vads.compiler.ir.util.NodeSupport.predecessorSkipProj;
 
 public final class InterferenceGraph {
-    private final Map<Node, HashSet<Node>> adjacencyList;
+    private final Map<SSAValue, HashSet<SSAValue>> adjacencyList;
 
     public InterferenceGraph() {
         adjacencyList = new HashMap<>();
     }
 
-    public void addNode(Node n) {
+    public void addNode(SSAValue n) {
         if (!adjacencyList.containsKey(n)) {
             adjacencyList.put(n, new HashSet<>());
         }
     }
 
-    public Set<Node> getNodes() {
+    public Set<SSAValue> getNodes() {
         return Collections.unmodifiableSet(adjacencyList.keySet());
     }
 
-    public void addEdge(Node from, Node to) {
+    public void addEdge(SSAValue from, SSAValue to) {
         if (from == to) {
             throw new IllegalArgumentException("Cannot add edge to the same node"); // Graph is irreflexive
         }
@@ -43,7 +50,7 @@ public final class InterferenceGraph {
         adjacencyList.get(to).add(from); // Undirected graph
     }
 
-    public Set<Node> neighborsOf(Node n) {
+    public Set<SSAValue> neighborsOf(SSAValue n) {
         if (!adjacencyList.containsKey(n)) {
             throw new IllegalArgumentException("Graph does not contain node " + n);
         }
@@ -51,15 +58,15 @@ public final class InterferenceGraph {
         return Collections.unmodifiableSet(adjacencyList.get(n));
     }
 
-    public void removeNode(Node n) {
-        for (Node nn : adjacencyList.get(n)) {
-            HashSet<Node> nnEdges = adjacencyList.get(nn);
+    public void removeNode(SSAValue n) {
+        for (SSAValue nn : adjacencyList.get(n)) {
+            HashSet<SSAValue> nnEdges = adjacencyList.get(nn);
             nnEdges.remove(n);
         }
         adjacencyList.remove(n);
     }
 
-    public Optional<Node> getMaximumCardinalityNode(Map<Node, Integer> cardinalities) {
+    public Optional<SSAValue> getMaximumCardinalityNode(Map<SSAValue, Integer> cardinalities) {
         return adjacencyList
                 .entrySet()
                 .stream()
@@ -67,12 +74,12 @@ public final class InterferenceGraph {
                 .map(Map.Entry::getKey);
     }
 
-    private InterferenceGraph(Map<Node, HashSet<Node>> adjacencyList) {
+    private InterferenceGraph(Map<SSAValue, HashSet<SSAValue>> adjacencyList) {
         this.adjacencyList = adjacencyList;
     }
 
     public InterferenceGraph copy() {
-        Map<Node, HashSet<Node>> adjacencyListCopy = adjacencyList
+        Map<SSAValue, HashSet<SSAValue>> adjacencyListCopy = adjacencyList
                 .entrySet()
                 .stream()
                 .collect(Collectors.toMap(
@@ -82,29 +89,29 @@ public final class InterferenceGraph {
         return new InterferenceGraph(adjacencyListCopy);
     }
 
-    public static InterferenceGraph createFrom(NodeSequence nodeSequence, LivenessAnalysisResult livenessAnalysisResult) {
+    public static InterferenceGraph createFrom(Collection<IrBlock> blocks, LivenessAnalysisResult livenessAnalysisResult) {
         InterferenceGraph interferenceGraph = new InterferenceGraph();
-        nodeSequence.getSequence().forEach(interferenceGraph::addNode);
 
-        Set<Node> liveAtSuccessor = Set.of();
-        for (Node node : nodeSequence.getSequence().reversed()) {
-            switch (node) {
-                case BinaryOperationNode b -> {
-                     liveAtSuccessor
-                            .stream()
-                            .filter(u -> node != u)
-                            .forEach(u -> interferenceGraph.addEdge(node, u));
-                }
-                case ConstIntNode c -> {
-                    liveAtSuccessor
-                            .stream()
-                            .filter(u -> node != u)
-                            .forEach(u -> interferenceGraph.addEdge(node, u));
-                }
-                default -> {
+        // Add all nodes
+        for (IrBlock block : blocks) {
+            for (IrInstruction instruction : block.getInstructions()) {
+                if (instruction instanceof IrValueProducingInstruction valueProducingInstruction) {
+                    interferenceGraph.addNode(valueProducingInstruction.target());
                 }
             }
-            liveAtSuccessor = livenessAnalysisResult.getLiveNodesAt(node);
+        }
+
+        // Add edges
+        for (IrBlock block : blocks) {
+            Set<SSAValue> liveAtSuccessor = livenessAnalysisResult.getBlockLiveOut(block);
+            for (IrInstruction instruction : block.getInstructions().reversed()) {
+                if (instruction instanceof IrValueProducingInstruction valueProducingInstruction) {
+                    liveAtSuccessor
+                            .stream()
+                            .filter(x -> valueProducingInstruction.target() != x)
+                            .forEach(x -> interferenceGraph.addEdge(x, valueProducingInstruction.target()));
+                }
+            }
         }
 
         return interferenceGraph;

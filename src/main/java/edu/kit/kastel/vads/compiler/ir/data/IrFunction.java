@@ -4,5 +4,6 @@ import java.util.List;
 
 public record IrFunction(
         IrBlock startBlock,
-        List<IrBlock> blocks) {
+        List<IrBlock> blocks,
+        boolean isEntryPoint) {
 }

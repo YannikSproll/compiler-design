@@ -1,7 +1,9 @@
 package edu.kit.kastel.vads.compiler.backend.aasm;
 
+import edu.kit.kastel.vads.compiler.ir.data.IrInstruction;
+import edu.kit.kastel.vads.compiler.ir.data.IrReturnInstruction;
+import edu.kit.kastel.vads.compiler.ir.data.ValueProducingInstructions.*;
 import edu.kit.kastel.vads.compiler.ir.node.*;
-import edu.kit.kastel.vads.compiler.ir.util.DebugInfo;
 
 public final class DebugCodeGeneratorDecorator implements CodeGenerator {
 
@@ -32,45 +34,57 @@ public final class DebugCodeGeneratorDecorator implements CodeGenerator {
     }
 
     @Override
-    public void generateConstantInstruction(RegisterAllocationResult allocationResult, ConstIntNode constIntNode) {
-        generateLineDebugging(constIntNode);
-        codeGenerator.generateConstantInstruction(allocationResult, constIntNode);
+    public void generateConstantInstruction(RegisterAllocationResult allocationResult, IrIntConstantInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateConstantInstruction(allocationResult, instruction);
     }
 
     @Override
-    public void generateAdd(RegisterAllocationResult allocationResult, AddNode addNode) {
-        generateLineDebugging(addNode);
-        codeGenerator.generateAdd(allocationResult, addNode);
+    public void generateConstantInstruction(RegisterAllocationResult allocationResult, IrBoolConstantInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateConstantInstruction(allocationResult, instruction);
     }
 
     @Override
-    public void generateSub(RegisterAllocationResult allocationResult, SubNode subNode) {
-        generateLineDebugging(subNode);
-        codeGenerator.generateSub(allocationResult, subNode);
+    public void generateMove(RegisterAllocationResult allocationResult, IrMoveInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateMove(allocationResult, instruction);
     }
 
     @Override
-    public void generateMult(RegisterAllocationResult allocationResult, MulNode mulNode) {
-        generateLineDebugging(mulNode);
-        codeGenerator.generateMult(allocationResult, mulNode);
+    public void generateAdd(RegisterAllocationResult allocationResult, IrAddInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateAdd(allocationResult, instruction);
     }
 
     @Override
-    public void generateDiv(RegisterAllocationResult allocationResult, DivNode divNode) {
-        generateLineDebugging(divNode);
-        codeGenerator.generateDiv(allocationResult, divNode);
+    public void generateSub(RegisterAllocationResult allocationResult, IrSubInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateSub(allocationResult, instruction);
     }
 
     @Override
-    public void generateMod(RegisterAllocationResult allocationResult, ModNode modNode) {
-        generateLineDebugging(modNode);
-        codeGenerator.generateMod(allocationResult, modNode);
+    public void generateMult(RegisterAllocationResult allocationResult, IrMulInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateMult(allocationResult, instruction);
     }
 
     @Override
-    public void generateReturn(RegisterAllocationResult allocationResult, ReturnNode returnNode) {
-        generateLineDebugging(returnNode);
-        codeGenerator.generateReturn(allocationResult, returnNode);
+    public void generateDiv(RegisterAllocationResult allocationResult, IrDivInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateDiv(allocationResult, instruction);
+    }
+
+    @Override
+    public void generateMod(RegisterAllocationResult allocationResult, IrModInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateMod(allocationResult, instruction);
+    }
+
+    @Override
+    public void generateReturn(RegisterAllocationResult allocationResult, IrReturnInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateReturn(allocationResult, instruction);
     }
 
     @Override
@@ -82,10 +96,10 @@ public final class DebugCodeGeneratorDecorator implements CodeGenerator {
 
     }
 
-    private void generateLineDebugging(Node node) {
-        if (node.debugInfo() instanceof DebugInfo.SourceInfo(edu.kit.kastel.vads.compiler.Span span)) {
+    private void generateLineDebugging(IrInstruction instruction) {
+        /*if (node.debugInfo() instanceof DebugInfo.SourceInfo(edu.kit.kastel.vads.compiler.Span span)) {
             getX86InstructionGenerator()
                 .generateLOCAnnotation(1, span.start().line(), span.start().column());
-        }
+        }*/
     }
 }

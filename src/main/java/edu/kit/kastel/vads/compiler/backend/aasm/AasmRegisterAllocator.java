@@ -3,6 +3,8 @@ package edu.kit.kastel.vads.compiler.backend.aasm;
 import edu.kit.kastel.vads.compiler.backend.regalloc.Register;
 import edu.kit.kastel.vads.compiler.backend.regalloc.RegisterAllocator;
 import edu.kit.kastel.vads.compiler.ir.IrGraph;
+import edu.kit.kastel.vads.compiler.ir.data.IrFunction;
+import edu.kit.kastel.vads.compiler.ir.data.SSAValue;
 import edu.kit.kastel.vads.compiler.ir.node.*;
 
 import java.util.*;
@@ -21,14 +23,14 @@ public class AasmRegisterAllocator implements RegisterAllocator {
     }
 
     @Override
-    public RegisterAllocationResult allocateRegisters(NodeSequence nodeSequence) {
-        LivenessAnalysisResult livenessAnalysisResult = livenessAnalysis.analyzeLiveness(nodeSequence);
+    public RegisterAllocationResult allocateRegisters(IrFunction irFunction) {
+        LivenessAnalysisResult livenessAnalysisResult = livenessAnalysis.run(irFunction);
 
-        InterferenceGraph interferenceGraph = InterferenceGraph.createFrom(nodeSequence, livenessAnalysisResult);
+        InterferenceGraph interferenceGraph = InterferenceGraph.createFrom(irFunction.blocks(), livenessAnalysisResult);
 
-        List<Node> simplicialEliminationOrderedNodes = getSimplicialEliminationOrderedNodes(interferenceGraph);
+        List<SSAValue> simplicialEliminationOrderedNodes = getSimplicialEliminationOrderedNodes(interferenceGraph);
 
-        Map<Node, Integer> coloring = colorInterferenceGraph(interferenceGraph, simplicialEliminationOrderedNodes);
+        Map<SSAValue, Integer> coloring = colorInterferenceGraph(interferenceGraph, simplicialEliminationOrderedNodes);
 
         ColorToRegisterMappingResult mappingResult = mapColorsToRegisters(coloring);
         return new RegisterAllocationResult(livenessAnalysisResult, mappingResult.mapping(), mappingResult.tempRegister(), mappingResult.registers());
@@ -37,21 +39,21 @@ public class AasmRegisterAllocator implements RegisterAllocator {
 
 
 
-    private List<Node> getSimplicialEliminationOrderedNodes(
+    private List<SSAValue> getSimplicialEliminationOrderedNodes(
             InterferenceGraph interferenceGraphRef) {
         InterferenceGraph interferenceGraph = interferenceGraphRef.copy();
 
-        List<Node> simplicialEliminationOrderedNodes = new ArrayList<>();
-        Map<Node, Integer> nodeWeights = interferenceGraph
+        List<SSAValue> simplicialEliminationOrderedNodes = new ArrayList<>();
+        Map<SSAValue, Integer> nodeWeights = interferenceGraph
                 .getNodes()
                 .stream()
                 .collect(Collectors.toMap(Function.identity(),_ -> 0));
 
-        Optional<Node> maximumCardinalityNode = interferenceGraph.getMaximumCardinalityNode(nodeWeights);
+        Optional<SSAValue> maximumCardinalityNode = interferenceGraph.getMaximumCardinalityNode(nodeWeights);
 
         while (maximumCardinalityNode.isPresent()) {
             simplicialEliminationOrderedNodes.add(maximumCardinalityNode.get());
-            for (Node neighbor : interferenceGraph.neighborsOf(maximumCardinalityNode.get())) {
+            for (SSAValue neighbor : interferenceGraph.neighborsOf(maximumCardinalityNode.get())) {
                 nodeWeights.put(neighbor, nodeWeights.get(neighbor) + 1);
             }
             interferenceGraph.removeNode(maximumCardinalityNode.get());
@@ -62,13 +64,13 @@ public class AasmRegisterAllocator implements RegisterAllocator {
         return simplicialEliminationOrderedNodes;
     }
 
-    private Map<Node, Integer> colorInterferenceGraph(InterferenceGraph interferenceGraphRef, List<Node> simplicialEliminationOrderedNodes) {
-        Map<Node, Optional<Integer>> coloring = simplicialEliminationOrderedNodes
+    private Map<SSAValue, Integer> colorInterferenceGraph(InterferenceGraph interferenceGraphRef, List<SSAValue> simplicialEliminationOrderedNodes) {
+        Map<SSAValue, Optional<Integer>> coloring = simplicialEliminationOrderedNodes
                 .stream()
                 .collect(Collectors.toMap(x -> x, _ -> Optional.empty()));
         int maxUsedColor = 0;
 
-        for (Node node : simplicialEliminationOrderedNodes) {
+        for (SSAValue node : simplicialEliminationOrderedNodes) {
             Set<Integer> usedNeighborColors = interferenceGraphRef
                     .neighborsOf(node)
                     .stream()
@@ -98,34 +100,16 @@ public class AasmRegisterAllocator implements RegisterAllocator {
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get()));
     }
 
-    private ColorToRegisterMappingResult mapColorsToRegisters(Map<Node, Integer> colors) {
-        Map<Integer, HashSet<Node>> invertedMap = colors.entrySet()
+    private ColorToRegisterMappingResult mapColorsToRegisters(Map<SSAValue, Integer> colors) {
+        Map<Integer, HashSet<SSAValue>> invertedMap = colors.entrySet()
                 .stream()
                 .collect(Collectors.groupingBy(
                         Map.Entry::getValue,
                         Collectors.mapping(Map.Entry::getKey,
                                 Collectors.toCollection(HashSet::new))));
-        Map<Node, Register> colorToRegisterMapping = new HashMap<>();
+        Map<SSAValue, Register> colorToRegisterMapping = new HashMap<>();
 
-        Set<Node> remainingNodes = colors.keySet().stream().collect(Collectors.toSet());
-
-        // Do precoloring for return node || Commented out because of unclear interference with division
-        /*for (Node node : colors.keySet()) {
-            switch (node) {
-                case ReturnNode r -> {
-                    Node resultPredecessor = predecessorSkipProj(r, ReturnNode.RESULT);
-                    Integer color = colors.get(resultPredecessor);
-                    HashSet<Node> affectedNodes = invertedMap.get(color);
-                    for (Node affectedNode : affectedNodes) {
-                        remainingNodes.remove(affectedNode);
-                        registers.put(affectedNode, X86Register.REG_AX);
-                    }
-                    remainingNodes.remove(node);
-                    registers.put(node, X86Register.REG_AX);
-                }
-                default -> {}
-            }
-        }*/
+        Set<SSAValue> remainingNodes = new HashSet<>(colors.keySet());
 
         Set<Register> remainingRegisters = new HashSet<>(X86Register.getGeneralPurposeRegisters());
 
@@ -137,7 +121,7 @@ public class AasmRegisterAllocator implements RegisterAllocator {
         int numberOfStackSlots = 0;
         // Get
         while (!remainingNodes.isEmpty()) {
-            Node node = remainingNodes.stream().findFirst().get();
+            SSAValue node = remainingNodes.stream().findFirst().get();
             Optional<Register> nextRegister = remainingRegisters.stream().findFirst();
 
             Register nodeRegister;
@@ -151,8 +135,8 @@ public class AasmRegisterAllocator implements RegisterAllocator {
             registers.add(nodeRegister);
 
             Integer color = colors.get(node);
-            HashSet<Node> affectedNodes = invertedMap.get(color);
-            for (Node affectedNode : affectedNodes) {
+            HashSet<SSAValue> affectedNodes = invertedMap.get(color);
+            for (SSAValue affectedNode : affectedNodes) {
                 remainingNodes.remove(affectedNode);
                 colorToRegisterMapping.put(affectedNode, nodeRegister);
             }
@@ -164,5 +148,5 @@ public class AasmRegisterAllocator implements RegisterAllocator {
         return new ColorToRegisterMappingResult(colorToRegisterMapping, tempRegister, registers);
     }
 
-    private record ColorToRegisterMappingResult(Map<Node, Register> mapping, Register tempRegister, Set<Register> registers) { }
+    private record ColorToRegisterMappingResult(Map<SSAValue, Register> mapping, Register tempRegister, Set<Register> registers) { }
 }

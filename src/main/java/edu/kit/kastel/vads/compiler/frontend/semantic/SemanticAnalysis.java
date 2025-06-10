@@ -19,6 +19,8 @@ public class SemanticAnalysis {
         typedFile.accept(new TypedPostorderVisitor<>(new ReturnAnalysis()), new ReturnAnalysis.ReturnState());
         typedFile.accept(new VariableDefinitionAnalysis(), new VariableDefinitionAnalysis.VariableDefinitionContext());
 
+        new EntryPointAnalysis().analyze(typedFile);
+
         return typedFile;
     }
 }

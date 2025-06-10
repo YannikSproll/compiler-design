@@ -1,6 +1,8 @@
 package edu.kit.kastel.vads.compiler.backend.aasm;
 
 import edu.kit.kastel.vads.compiler.backend.regalloc.Register;
+import edu.kit.kastel.vads.compiler.ir.data.IrReturnInstruction;
+import edu.kit.kastel.vads.compiler.ir.data.ValueProducingInstructions.*;
 import edu.kit.kastel.vads.compiler.ir.node.*;
 
 import static edu.kit.kastel.vads.compiler.ir.util.NodeSupport.predecessorSkipProj;
@@ -34,15 +36,34 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateConstantInstruction(RegisterAllocationResult allocationResult, ConstIntNode constIntNode) {
-        instructionGenerator.generateIntConstInstruction(allocationResult.nodeToRegisterMapping().get(constIntNode), constIntNode.value(), BitSize.BIT_32);
+    public void generateConstantInstruction(RegisterAllocationResult allocationResult, IrIntConstantInstruction instruction) {
+        instructionGenerator.generateIntConstInstruction(
+                allocationResult.nodeToRegisterMapping().get(instruction.target()),
+                instruction.constValue(),
+                BitSize.BIT_32);
     }
 
     @Override
-    public void generateAdd(RegisterAllocationResult allocationResult, AddNode addNode) {
-        Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(addNode, BinaryOperationNode.LEFT));
-        Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(addNode, BinaryOperationNode.RIGHT));
-        Register targetRegister = allocationResult.nodeToRegisterMapping().get(addNode);
+    public void generateConstantInstruction(RegisterAllocationResult allocationResult, IrBoolConstantInstruction instruction) {
+        instructionGenerator.generateIntConstInstruction(
+                allocationResult.nodeToRegisterMapping().get(instruction.target()),
+                instruction.constValue() ? 1 : 0,
+                BitSize.BIT_8);
+    }
+
+    @Override
+    public void generateMove(RegisterAllocationResult allocationResult, IrMoveInstruction instruction) {
+        instructionGenerator.generateMoveInstruction(
+                allocationResult.nodeToRegisterMapping().get(instruction.source()),
+                allocationResult.nodeToRegisterMapping().get(instruction.target()),
+                BitSize.BIT_32);
+    }
+
+    @Override
+    public void generateAdd(RegisterAllocationResult allocationResult, IrAddInstruction instruction) {
+        Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
+        Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
+        Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
         if (targetRegister instanceof StackSlot) {
             instructionGenerator.generateMoveInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
@@ -62,10 +83,10 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateSub(RegisterAllocationResult allocationResult, SubNode subNode) {
-        Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(subNode, BinaryOperationNode.LEFT));
-        Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(subNode, BinaryOperationNode.RIGHT));
-        Register targetRegister = allocationResult.nodeToRegisterMapping().get(subNode);
+    public void generateSub(RegisterAllocationResult allocationResult, IrSubInstruction instruction) {
+        Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
+        Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
+        Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
         if (targetRegister instanceof StackSlot) {
             instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
@@ -86,10 +107,10 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateMult(RegisterAllocationResult allocationResult, MulNode mulNode) {
-        Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(mulNode, BinaryOperationNode.LEFT));
-        Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(mulNode, BinaryOperationNode.RIGHT));
-        Register targetRegister = allocationResult.nodeToRegisterMapping().get(mulNode);
+    public void generateMult(RegisterAllocationResult allocationResult, IrMulInstruction instruction) {
+        Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
+        Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
+        Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
         if (targetRegister instanceof StackSlot) {
             instructionGenerator.generateMoveInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
@@ -109,26 +130,26 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateDiv(RegisterAllocationResult allocationResult, DivNode divNode) {
+    public void generateDiv(RegisterAllocationResult allocationResult, IrDivInstruction instruction) {
         instructionGenerator
-                .generateMoveInstruction(allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(divNode, BinaryOperationNode.LEFT)), X86Register.REG_AX, BitSize.BIT_32)
+                .generateMoveInstruction(allocationResult.nodeToRegisterMapping().get(instruction.leftSrc()), X86Register.REG_AX, BitSize.BIT_32)
                 .generateSignExtendInstruction(BitSize.BIT_32)
-                .generateIntegerDivisionInstruction(allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(divNode, BinaryOperationNode.RIGHT)), BitSize.BIT_32)
-                .generateMoveInstruction(X86Register.REG_AX, allocationResult.nodeToRegisterMapping().get(divNode), BitSize.BIT_32);
+                .generateIntegerDivisionInstruction(allocationResult.nodeToRegisterMapping().get(instruction.rightSrc()), BitSize.BIT_32)
+                .generateMoveInstruction(X86Register.REG_AX, allocationResult.nodeToRegisterMapping().get(instruction.target()), BitSize.BIT_32);
     }
 
     @Override
-    public void generateMod(RegisterAllocationResult allocationResult, ModNode modNode) {
+    public void generateMod(RegisterAllocationResult allocationResult, IrModInstruction instruction) {
         instructionGenerator
-                .generateMoveInstruction(allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(modNode, BinaryOperationNode.LEFT)), X86Register.REG_AX, BitSize.BIT_32)
+                .generateMoveInstruction(allocationResult.nodeToRegisterMapping().get(instruction.leftSrc()), X86Register.REG_AX, BitSize.BIT_32)
                 .generateSignExtendInstruction(BitSize.BIT_32)
-                .generateIntegerDivisionInstruction(allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(modNode, BinaryOperationNode.RIGHT)), BitSize.BIT_32)
-                .generateMoveInstruction(X86Register.REG_DX, allocationResult.nodeToRegisterMapping().get(modNode), BitSize.BIT_32);
+                .generateIntegerDivisionInstruction(allocationResult.nodeToRegisterMapping().get(instruction.rightSrc()), BitSize.BIT_32)
+                .generateMoveInstruction(X86Register.REG_DX, allocationResult.nodeToRegisterMapping().get(instruction.target()), BitSize.BIT_32);
     }
 
     @Override
-    public void generateReturn(RegisterAllocationResult allocationResult, ReturnNode returnNode) {
-        Register returnValueRegister = allocationResult.nodeToRegisterMapping().get(predecessorSkipProj(returnNode, ReturnNode.RESULT));
+    public void generateReturn(RegisterAllocationResult allocationResult, IrReturnInstruction instruction) {
+        Register returnValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.src());
         if (returnValueRegister != X86Register.REG_AX) {
             instructionGenerator.generateMoveInstruction(returnValueRegister, X86Register.REG_AX, BitSize.BIT_32);
         }

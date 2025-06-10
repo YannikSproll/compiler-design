@@ -3,6 +3,7 @@ package edu.kit.kastel.vads.compiler.pipeline;
 import edu.kit.kastel.vads.compiler.frontend.semantic.hir.TypedFile;
 import edu.kit.kastel.vads.compiler.ir.IrGraph;
 import edu.kit.kastel.vads.compiler.frontend.parser.ast.ProgramTree;
+import edu.kit.kastel.vads.compiler.ir.data.IrFile;
 
 import java.io.IOException;
 import java.util.List;
@@ -25,10 +26,10 @@ public final class CompilerPipeline {
 
         TypedFile typedFile = semanticAnalysisStep.run(ast);
 
-         irStep.run(typedFile);
+        IrFile file = irStep.run(typedFile);
         //List<IrGraph> irGraphs = irStep.run(ast);
 
-        //CodeGenerationContext codeGenerationContext = new CodeGenerationContext(ast, runInfo);
-        //codeGenerationStep.run(irGraphs, codeGenerationContext);
+        CodeGenerationContext codeGenerationContext = new CodeGenerationContext(ast, runInfo);
+        codeGenerationStep.run(file, codeGenerationContext);
     }
 }

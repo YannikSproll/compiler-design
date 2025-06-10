@@ -156,7 +156,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
         IrBlock startBlock = context.beginFunction(function.symbol().name());
         function.body().accept(this, context);
 
-        IrFunction irFunction = new IrFunction(startBlock, context.blocks());
+        IrFunction irFunction = new IrFunction(startBlock, context.blocks(), function.isMainFunction());
 
         return SSAConstructionResult.function(irFunction);
     }

@@ -24,14 +24,11 @@ public class IRStep {
         return Collections.unmodifiableList(graphs);
     }
 
-    public void run(TypedFile typedFile) {
+    public IrFile run(TypedFile typedFile) {
         SsaConstruction construction = new SsaConstruction();
         IrFile irFile = construction.generateIr(typedFile);
         new IrFunctionPrinter().print(irFile);
 
-        LivenessAnalysis la = new LivenessAnalysis();
-        for (IrFunction function : irFile.functions()) {
-            la.run(function);
-        }
+        return irFile;
     }
 }

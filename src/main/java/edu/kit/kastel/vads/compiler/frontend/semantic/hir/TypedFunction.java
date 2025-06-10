@@ -1,6 +1,6 @@
 package edu.kit.kastel.vads.compiler.frontend.semantic.hir;
 
-public record TypedFunction(Symbol symbol, TypedBlock body, Scope declaringScope) implements TypedNode {
+public record TypedFunction(Symbol symbol, TypedBlock body, Scope declaringScope, boolean isMainFunction) implements TypedNode {
 
     @Override
     public TypedFunction asTypedFunction() {

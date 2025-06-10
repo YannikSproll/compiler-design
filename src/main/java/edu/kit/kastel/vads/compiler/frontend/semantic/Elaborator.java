@@ -228,7 +228,11 @@ public class Elaborator implements
                 nameResult.name(),
                 returnTypeResult.type(),
                 functionTree.span());
-        TypedFunction typedFunction = new TypedFunction(functionSymbol, bodyResult.block(), currentScope);
+        TypedFunction typedFunction = new TypedFunction(
+                functionSymbol,
+                bodyResult.block(),
+                currentScope,
+                MAIN_FUNCTION_NAME.equals(functionSymbol.name()));
         return ElaborationResult.node(typedFunction);
     }
 
