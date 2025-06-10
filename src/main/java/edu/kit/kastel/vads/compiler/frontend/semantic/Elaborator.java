@@ -240,6 +240,10 @@ public class Elaborator implements
     public ElaborationResult visit(IdentExpressionTree identExpressionTree, ElaborationContext context) {
         ElaborationResult nameResult = identExpressionTree.name().accept(this, context);
 
+        if (!context.symbolTable().isVariableDeclared(nameResult.name())) {
+            throw new SemanticException("The variable " + nameResult.name() + " is not declared.");
+        }
+
         Symbol variableSymbol = context.symbolTable().getCurrentScope().typeOf(nameResult.name());
 
         TypedVariable typedVariable = new TypedVariable(variableSymbol, identExpressionTree.span());

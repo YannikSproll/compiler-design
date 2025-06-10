@@ -50,7 +50,11 @@ class ReturnAnalysis implements TypedVisitor<ReturnAnalysis.ReturnState> {
 
     @Override
     public void visit(TypedFile file, ReturnState returnState) {
-        // Concept of return does not apply to file
+        for (TypedFunction function : file.functions()) {
+            if (!returnState.doesTreeReturn(function)) {
+                throw new SemanticException("The function" + function.symbol().name() + " does not return.");
+            }
+        }
     }
 
     @Override

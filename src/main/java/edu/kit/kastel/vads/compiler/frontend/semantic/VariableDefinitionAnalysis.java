@@ -174,6 +174,8 @@ class VariableDefinitionAnalysis implements TypedResultVisitor<VariableDefinitio
 
     @Override
     public List<Symbol> visit(TypedReturn returnStatement, VariableDefinitionContext context) {
+        returnStatement.returnExpression().accept(this, context);
+
         return context.getAllDeclaredSymbols();
     }
 
