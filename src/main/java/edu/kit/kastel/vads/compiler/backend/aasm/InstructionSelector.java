@@ -137,6 +137,7 @@ public class InstructionSelector {
                 codeGenerator.generateMult(allocationResult, irMulInstruction);
                 break;
             case IrNegateInstruction irNegateInstruction:
+                codeGenerator.generateNegation(allocationResult, irNegateInstruction);
                 break;
             case IrRightShiftInstruction irRightShiftInstruction:
                 break;

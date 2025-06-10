@@ -82,6 +82,12 @@ public final class DebugCodeGeneratorDecorator implements CodeGenerator {
     }
 
     @Override
+    public void generateNegation(RegisterAllocationResult allocationResult, IrNegateInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateNegation(allocationResult, instruction);
+    }
+
+    @Override
     public void generateReturn(RegisterAllocationResult allocationResult, IrReturnInstruction instruction) {
         generateLineDebugging(instruction);
         codeGenerator.generateReturn(allocationResult, instruction);

@@ -2,6 +2,7 @@ package edu.kit.kastel.vads.compiler.backend.aasm;
 
 import edu.kit.kastel.vads.compiler.ir.data.IrBlock;
 import edu.kit.kastel.vads.compiler.ir.data.IrInstruction;
+import edu.kit.kastel.vads.compiler.ir.data.IrReturnInstruction;
 import edu.kit.kastel.vads.compiler.ir.data.SSAValue;
 import edu.kit.kastel.vads.compiler.ir.data.ValueProducingInstructions.IrBinaryOperationInstruction;
 import edu.kit.kastel.vads.compiler.ir.data.ValueProducingInstructions.IrBoolConstantInstruction;
@@ -111,6 +112,8 @@ public final class InterferenceGraph {
                             .filter(x -> valueProducingInstruction.target() != x)
                             .forEach(x -> interferenceGraph.addEdge(x, valueProducingInstruction.target()));
                 }
+
+                liveAtSuccessor = livenessAnalysisResult.getLiveNodesAt(instruction);
             }
         }
 

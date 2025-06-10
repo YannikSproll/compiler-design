@@ -132,7 +132,7 @@ public class IrFunctionPrinter {
                 break;
             case IrModInstruction irModInstruction:
                 builder.append(INDENT).append(irModInstruction.target().name()).append(ASSIGN)
-                        .append("less_equal ").append(irModInstruction.leftSrc().name())
+                        .append("mod ").append(irModInstruction.leftSrc().name())
                         .append(SPACE).append(irModInstruction.rightSrc().name());
                 break;
             case IrMoveInstruction irMoveInstruction:

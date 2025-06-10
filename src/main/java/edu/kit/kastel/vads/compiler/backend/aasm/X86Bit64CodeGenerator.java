@@ -148,6 +148,19 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
+    public void generateNegation(RegisterAllocationResult allocationResult, IrNegateInstruction instruction) {
+
+        Register sourceValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.src());
+        Register targetValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
+
+        if (sourceValueRegister != targetValueRegister) {
+            instructionGenerator.generateMoveInstruction(sourceValueRegister, targetValueRegister, BitSize.BIT_32);
+        }
+
+        instructionGenerator.generateNegationInstruction(targetValueRegister, BitSize.BIT_32);
+    }
+
+    @Override
     public void generateReturn(RegisterAllocationResult allocationResult, IrReturnInstruction instruction) {
         Register returnValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.src());
         if (returnValueRegister != X86Register.REG_AX) {

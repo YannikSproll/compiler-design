@@ -21,6 +21,8 @@ public interface CodeGenerator {
     void generateDiv(RegisterAllocationResult allocationResult, IrDivInstruction instruction);
     void generateMod(RegisterAllocationResult allocationResult, IrModInstruction instruction);
 
+    void generateNegation(RegisterAllocationResult allocationResult, IrNegateInstruction instruction);
+
     void generateReturn(RegisterAllocationResult allocationResult, IrReturnInstruction instruction);
 
     X86InstructionGenerator getX86InstructionGenerator();
