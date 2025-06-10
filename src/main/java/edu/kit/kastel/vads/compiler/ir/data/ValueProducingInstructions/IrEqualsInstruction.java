@@ -6,5 +6,5 @@ public record IrEqualsInstruction(
         SSAValue target,
         SSAValue leftSrc,
         SSAValue rightSrc
-) implements IrValueProducingInstruction {
+) implements IrBinaryOperationInstruction {
 }

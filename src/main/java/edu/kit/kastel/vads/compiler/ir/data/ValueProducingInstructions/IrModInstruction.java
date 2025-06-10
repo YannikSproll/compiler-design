@@ -5,5 +5,5 @@ import edu.kit.kastel.vads.compiler.ir.data.SSAValue;
 public record IrModInstruction(
         SSAValue target,
         SSAValue leftSrc,
-        SSAValue rightSrc) implements IrValueProducingInstruction {
+        SSAValue rightSrc) implements IrBinaryOperationInstruction {
 }

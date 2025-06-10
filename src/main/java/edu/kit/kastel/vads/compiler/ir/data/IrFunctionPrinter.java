@@ -50,8 +50,8 @@ public class IrFunctionPrinter {
             case IrJumpInstruction jump:
                 builder.append(INDENT).append("jump ").append(jump.jumpTarget().name());
                 break;
-            case IrReturnInstruction _:
-                builder.append(INDENT).append("return");
+            case IrReturnInstruction returnInstruction:
+                builder.append(INDENT).append("return").append(SPACE).append(returnInstruction.src().name());
                 break;
             case IrBranchInstruction branchInstruction:
                 builder.append(INDENT).append("branch ")

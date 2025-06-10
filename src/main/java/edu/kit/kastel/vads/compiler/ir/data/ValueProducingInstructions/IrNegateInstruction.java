@@ -4,5 +4,5 @@ import edu.kit.kastel.vads.compiler.ir.data.SSAValue;
 
 public record IrNegateInstruction(
         SSAValue target,
-        SSAValue src) implements IrValueProducingInstruction {
+        SSAValue src) implements IrUnaryOperationInstruction {
 }

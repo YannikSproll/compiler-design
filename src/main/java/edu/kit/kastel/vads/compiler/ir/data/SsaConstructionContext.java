@@ -24,7 +24,7 @@ public class SsaConstructionContext {
     }
 
     public IrBlock beginFunction(String name) {
-        this.functionName = name;
+        this.functionName = "func_" + name;
         blockCounter = 0;
         IrBlock startBlock = createBlock("start");
         newCurrentBlock(startBlock);

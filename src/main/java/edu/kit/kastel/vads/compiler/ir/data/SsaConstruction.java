@@ -253,33 +253,6 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
         return phis;
     }
 
-    private static List<IrPhi> createPhis(
-            Map<Symbol, ValueBlockPair> firstBlockReassignments,
-            IrBlock secondBlock, Map<Symbol, SSAValue> secondBlockReassignments,
-            SsaConstructionContext context) {
-        ArrayList<IrPhi> phis = new ArrayList<>();
-
-        for (Map.Entry<Symbol, ValueBlockPair> entry : firstBlockReassignments.entrySet()) {
-            Symbol currentSymbol = entry.getKey();
-            if (secondBlockReassignments.containsKey(currentSymbol)) {
-                SSAValue phiTargetValue = context.generateNewSSAValue();
-                context.introduceNewSSAValue(currentSymbol, phiTargetValue);
-
-                IrPhi phi = new IrPhi(
-                        phiTargetValue,
-                        List.of(
-                                new IrPhi.IrPhiItem(
-                                        firstBlockReassignments.get(currentSymbol).value(),
-                                        firstBlockReassignments.get(currentSymbol).createdIn()),
-                                new IrPhi.IrPhiItem(secondBlockReassignments.get(currentSymbol), secondBlock)
-                        ));
-                phis.add(phi);
-            }
-        }
-
-        return phis;
-    }
-
     @Override
     public SSAConstructionResult visit(TypedIntLiteral literal, SsaConstructionContext context) {
         IrIntConstantInstruction constantInstruction = new IrIntConstantInstruction(

@@ -1,12 +1,10 @@
 package edu.kit.kastel.vads.compiler.pipeline;
 
+import edu.kit.kastel.vads.compiler.backend.aasm.LivenessAnalysis;
 import edu.kit.kastel.vads.compiler.frontend.semantic.hir.TypedFile;
 import edu.kit.kastel.vads.compiler.ir.IrGraph;
 import edu.kit.kastel.vads.compiler.ir.SsaTranslation;
-import edu.kit.kastel.vads.compiler.ir.data.IrFile;
-import edu.kit.kastel.vads.compiler.ir.data.IrFunctionPrinter;
-import edu.kit.kastel.vads.compiler.ir.data.SsaConstruction;
-import edu.kit.kastel.vads.compiler.ir.data.SsaConstructionContext;
+import edu.kit.kastel.vads.compiler.ir.data.*;
 import edu.kit.kastel.vads.compiler.ir.optimize.LocalValueNumbering;
 import edu.kit.kastel.vads.compiler.frontend.parser.ast.FunctionTree;
 import edu.kit.kastel.vads.compiler.frontend.parser.ast.ProgramTree;
@@ -30,5 +28,10 @@ public class IRStep {
         SsaConstruction construction = new SsaConstruction();
         IrFile irFile = construction.generateIr(typedFile);
         new IrFunctionPrinter().print(irFile);
+
+        LivenessAnalysis la = new LivenessAnalysis();
+        for (IrFunction function : irFile.functions()) {
+            la.run(function);
+        }
     }
 }
