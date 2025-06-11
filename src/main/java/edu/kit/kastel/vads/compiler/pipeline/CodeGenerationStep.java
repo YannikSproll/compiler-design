@@ -1,13 +1,11 @@
 package edu.kit.kastel.vads.compiler.pipeline;
 
 import edu.kit.kastel.vads.compiler.backend.aasm.*;
-import edu.kit.kastel.vads.compiler.ir.IrGraph;
-import edu.kit.kastel.vads.compiler.ir.data.IrFile;
+import edu.kit.kastel.vads.compiler.ir.IrFile;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 
 public class CodeGenerationStep {
 

@@ -1,7 +1,5 @@
 package edu.kit.kastel.vads.compiler;
 
-import edu.kit.kastel.vads.compiler.ir.IrGraph;
-import edu.kit.kastel.vads.compiler.ir.util.YCompPrinter;
 import edu.kit.kastel.vads.compiler.frontend.parser.ParseException;
 import edu.kit.kastel.vads.compiler.pipeline.CompilerPipeline;
 import edu.kit.kastel.vads.compiler.pipeline.CompilerPipelineRunInfo;
@@ -32,12 +30,5 @@ public class Main {
             System.exit(7);
             throw new AssertionError("unreachable");
         }
-    }
-
-    private static void dumpGraph(IrGraph graph, Path path, String key) throws IOException {
-        Files.writeString(
-            path.resolve(graph.name() + "-" + key + ".vcg"),
-            YCompPrinter.print(graph)
-        );
     }
 }

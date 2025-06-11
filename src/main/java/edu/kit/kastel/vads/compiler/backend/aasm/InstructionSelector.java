@@ -1,12 +1,9 @@
 package edu.kit.kastel.vads.compiler.backend.aasm;
 
-import edu.kit.kastel.vads.compiler.ir.data.*;
-import edu.kit.kastel.vads.compiler.ir.data.ValueProducingInstructions.*;
-import edu.kit.kastel.vads.compiler.ir.node.Node;
+import edu.kit.kastel.vads.compiler.ir.*;
+import edu.kit.kastel.vads.compiler.ir.ValueProducingInstructions.*;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 public class InstructionSelector {

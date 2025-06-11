@@ -1,9 +1,8 @@
 package edu.kit.kastel.vads.compiler.backend.aasm;
 
-import edu.kit.kastel.vads.compiler.ir.data.IrBlock;
-import edu.kit.kastel.vads.compiler.ir.data.IrInstruction;
-import edu.kit.kastel.vads.compiler.ir.data.SSAValue;
-import edu.kit.kastel.vads.compiler.ir.node.Node;
+import edu.kit.kastel.vads.compiler.ir.IrBlock;
+import edu.kit.kastel.vads.compiler.ir.IrInstruction;
+import edu.kit.kastel.vads.compiler.ir.SSAValue;
 
 import java.util.Collections;
 import java.util.Map;

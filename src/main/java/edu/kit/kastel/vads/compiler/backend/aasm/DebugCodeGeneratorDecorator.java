@@ -1,11 +1,10 @@
 package edu.kit.kastel.vads.compiler.backend.aasm;
 
-import edu.kit.kastel.vads.compiler.ir.data.IrBranchInstruction;
-import edu.kit.kastel.vads.compiler.ir.data.IrInstruction;
-import edu.kit.kastel.vads.compiler.ir.data.IrJumpInstruction;
-import edu.kit.kastel.vads.compiler.ir.data.IrReturnInstruction;
-import edu.kit.kastel.vads.compiler.ir.data.ValueProducingInstructions.*;
-import edu.kit.kastel.vads.compiler.ir.node.*;
+import edu.kit.kastel.vads.compiler.ir.IrBranchInstruction;
+import edu.kit.kastel.vads.compiler.ir.IrInstruction;
+import edu.kit.kastel.vads.compiler.ir.IrJumpInstruction;
+import edu.kit.kastel.vads.compiler.ir.IrReturnInstruction;
+import edu.kit.kastel.vads.compiler.ir.ValueProducingInstructions.*;
 
 public final class DebugCodeGeneratorDecorator implements CodeGenerator {
 
@@ -190,9 +189,6 @@ public final class DebugCodeGeneratorDecorator implements CodeGenerator {
         return codeGenerator.getX86InstructionGenerator();
     }
 
-    private void generateComment(Node node) {
-
-    }
 
     private void generateLineDebugging(IrInstruction instruction) {
         /*if (node.debugInfo() instanceof DebugInfo.SourceInfo(edu.kit.kastel.vads.compiler.Span span)) {

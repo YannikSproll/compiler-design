@@ -1,12 +1,10 @@
 package edu.kit.kastel.vads.compiler.pipeline;
 
 import edu.kit.kastel.vads.compiler.frontend.semantic.hir.TypedFile;
-import edu.kit.kastel.vads.compiler.ir.IrGraph;
 import edu.kit.kastel.vads.compiler.frontend.parser.ast.ProgramTree;
-import edu.kit.kastel.vads.compiler.ir.data.IrFile;
+import edu.kit.kastel.vads.compiler.ir.IrFile;
 
 import java.io.IOException;
-import java.util.List;
 
 public final class CompilerPipeline {
     private final ParseAndLexStep parseAndLexStep;

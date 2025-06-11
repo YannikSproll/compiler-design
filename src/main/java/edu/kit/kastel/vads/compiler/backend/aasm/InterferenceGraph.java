@@ -1,9 +1,9 @@
 package edu.kit.kastel.vads.compiler.backend.aasm;
 
-import edu.kit.kastel.vads.compiler.ir.data.IrBlock;
-import edu.kit.kastel.vads.compiler.ir.data.IrInstruction;
-import edu.kit.kastel.vads.compiler.ir.data.SSAValue;
-import edu.kit.kastel.vads.compiler.ir.data.ValueProducingInstructions.IrValueProducingInstruction;
+import edu.kit.kastel.vads.compiler.ir.IrBlock;
+import edu.kit.kastel.vads.compiler.ir.IrInstruction;
+import edu.kit.kastel.vads.compiler.ir.SSAValue;
+import edu.kit.kastel.vads.compiler.ir.ValueProducingInstructions.IrValueProducingInstruction;
 
 import java.util.*;
 import java.util.stream.Collectors;

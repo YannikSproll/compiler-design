@@ -1,10 +1,10 @@
 package edu.kit.kastel.vads.compiler.backend.aasm;
 
 import edu.kit.kastel.vads.compiler.backend.regalloc.Register;
-import edu.kit.kastel.vads.compiler.ir.data.IrBranchInstruction;
-import edu.kit.kastel.vads.compiler.ir.data.IrJumpInstruction;
-import edu.kit.kastel.vads.compiler.ir.data.IrReturnInstruction;
-import edu.kit.kastel.vads.compiler.ir.data.ValueProducingInstructions.*;
+import edu.kit.kastel.vads.compiler.ir.IrBranchInstruction;
+import edu.kit.kastel.vads.compiler.ir.IrJumpInstruction;
+import edu.kit.kastel.vads.compiler.ir.IrReturnInstruction;
+import edu.kit.kastel.vads.compiler.ir.ValueProducingInstructions.*;
 
 public class X86Bit64CodeGenerator implements CodeGenerator {
     private final X86InstructionGenerator instructionGenerator;
