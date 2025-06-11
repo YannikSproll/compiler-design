@@ -1,5 +1,6 @@
 package edu.kit.kastel.vads.compiler.frontend.semantic;
 
+import edu.kit.kastel.vads.compiler.Span;
 import edu.kit.kastel.vads.compiler.frontend.lexer.Operator;
 import edu.kit.kastel.vads.compiler.frontend.parser.ast.*;
 import edu.kit.kastel.vads.compiler.frontend.parser.type.BasicType;
@@ -314,10 +315,25 @@ public class Elaborator implements
         TypedExpression typedExpression = negateTree.expression().accept(this, context)
                 .expression();
 
-        TypedUnaryOperation typedUnaryOperation;
+        TypedExpression typedUnaryOperation;
          switch (negateTree.operatorType()) {
-             case Operator.OperatorType.MINUS,
-                  Operator.OperatorType.BITWISE_NOT: {
+             case Operator.OperatorType.MINUS: {
+                 typeChecker.expectType(HirType.INT, typedExpression);
+
+                 if (typedExpression instanceof TypedIntLiteral(int value, HirType type, Span span)) {
+                     typedUnaryOperation = new TypedIntLiteral(
+                             -value,
+                             type,
+                             span);
+                 } else {
+                     typedUnaryOperation = new TypedUnaryOperation(
+                             mapUnaryOperator(negateTree.operatorType()),
+                             typedExpression,
+                             negateTree.span());
+                 }
+                 break;
+             }
+             case Operator.OperatorType.BITWISE_NOT: {
                  typeChecker.expectType(HirType.INT, typedExpression);
 
                   typedUnaryOperation = new TypedUnaryOperation(
@@ -329,10 +345,17 @@ public class Elaborator implements
             case Operator.OperatorType.LOGICAL_NOT: {
                 typeChecker.expectType(HirType.BOOLEAN, typedExpression);
 
-                 typedUnaryOperation = new TypedUnaryOperation(
-                        UnaryOperator.LOGICAL_NOT,
-                        typedExpression,
-                        negateTree.span());
+                if (typedExpression instanceof TypedBoolLiteral(boolean value, HirType type, Span span)) {
+                    typedUnaryOperation = new TypedBoolLiteral(
+                            !value,
+                            type,
+                            span);
+                } else {
+                    typedUnaryOperation = new TypedUnaryOperation(
+                            UnaryOperator.LOGICAL_NOT,
+                            typedExpression,
+                            negateTree.span());
+                }
                 break;
             }
              default: throw new SemanticException("Unsupported expression type: " + typedExpression.type());
