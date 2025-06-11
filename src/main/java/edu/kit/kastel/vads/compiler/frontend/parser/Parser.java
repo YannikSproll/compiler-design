@@ -285,6 +285,7 @@ public class Parser {
                         lhs.span().merge(elseExpression.span()));
             } else {
                 // TODO: Only allow binary operators
+                assertBinaryOperator(type);
                 this.tokenSource.consume();
 
                 int nextMinPrecedenceLevel = type.associativity() == Operator.OperatorAssociativity.LEFT
@@ -297,6 +298,19 @@ public class Parser {
         }
 
         return lhs;
+    }
+
+    private void assertBinaryOperator(OperatorType type) {
+        switch (type) {
+            case MUL, MINUS, PLUS, MOD, DIV,
+                 LEFT_SHIFT, RIGHT_SHIFT,
+                 LESS_THAN, GREATER_THAN, LESS_OR_EQUAL, GREATER_OR_EQUAL,
+                 BITWISE_AND, BITWISE_OR, BITWISE_XOR,
+                 EQUAL_TO, UNEQUAL_TO,
+                 LOGICAL_AND, LOGICAL_OR:
+                break;
+            default: throw new ParseException("expected binary operator but got " + type);
+        }
     }
 
     private ExpressionTree parseFactor() {
