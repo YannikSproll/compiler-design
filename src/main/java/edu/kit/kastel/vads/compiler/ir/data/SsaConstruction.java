@@ -384,6 +384,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
 
     @Override
     public SSAConstructionResult visit(TypedVariable variable, SsaConstructionContext context) {
+        // TODO: Solve declaration problem
         return SSAConstructionResult.ssaValue(context.getLatestSSAValue(variable.symbol()));
     }
 }

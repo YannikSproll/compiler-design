@@ -17,6 +17,7 @@ public class SemanticAnalysis {
         Elaborator elaborator = new Elaborator(typeChecker);
         TypedFile typedFile = elaborator.elaborate(program);
         typedFile.accept(new TypedPostorderVisitor<>(new ReturnAnalysis()), new ReturnAnalysis.ReturnState());
+        // TODO: Also check dead code
         typedFile.accept(new VariableDefinitionAnalysis(), new VariableDefinitionAnalysis.VariableDefinitionContext());
 
         new EntryPointAnalysis().analyze(typedFile);

@@ -284,6 +284,7 @@ public class Parser {
                         elseExpression,
                         lhs.span().merge(elseExpression.span()));
             } else {
+                // TODO: Only allow binary operators
                 this.tokenSource.consume();
 
                 int nextMinPrecedenceLevel = type.associativity() == Operator.OperatorAssociativity.LEFT
