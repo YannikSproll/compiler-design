@@ -259,6 +259,7 @@ public class Parser {
         return parseExpression(0);
     }
 
+
     private ExpressionTree parseExpression(int minPrecedenceLevel) {
         ExpressionTree lhs = parseFactor();
 
@@ -284,7 +285,6 @@ public class Parser {
                         elseExpression,
                         lhs.span().merge(elseExpression.span()));
             } else {
-                // TODO: Only allow binary operators
                 assertBinaryOperator(type);
                 this.tokenSource.consume();
 
