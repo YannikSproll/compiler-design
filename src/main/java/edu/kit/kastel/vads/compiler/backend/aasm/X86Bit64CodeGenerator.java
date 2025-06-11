@@ -62,20 +62,23 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
 
         generateMove(
+                allocationResult,
                 allocationResult.nodeToRegisterMapping().get(instruction.source()),
                 allocationResult.nodeToRegisterMapping().get(instruction.target()),
                 BitSize.BIT_32);
     }
 
-    private void generateMove(Register sourceRegister, Register targetRegister, BitSize bitSize) {
+    private void generateMove(RegisterAllocationResult allocationResult, Register sourceRegister, Register targetRegister, BitSize bitSize) {
         if (sourceRegister == targetRegister) {
             return;
         }
 
-        instructionGenerator.generateMoveInstruction(
-                sourceRegister,
-                targetRegister,
-                BitSize.BIT_32);
+        if (sourceRegister instanceof StackSlot && targetRegister instanceof StackSlot) {
+            instructionGenerator.generateMoveInstruction(sourceRegister, allocationResult.tempRegister(), bitSize)
+                    .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, bitSize);
+        } else {
+            instructionGenerator.generateMoveInstruction(sourceRegister, targetRegister, bitSize);
+        }
     }
 
     @Override
