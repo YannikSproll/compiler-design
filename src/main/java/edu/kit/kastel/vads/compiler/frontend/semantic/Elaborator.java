@@ -32,8 +32,7 @@ public class Elaborator implements
         SymbolTable symbolTable = new SymbolTable();
         ElaborationContext context = new ElaborationContext(symbolTable);
 
-        program.accept(this, context);
-        ElaborationResult elaborationResult = this.visit(program, context);
+        ElaborationResult elaborationResult = program.accept(this, context);
 
         return elaborationResult
                 .nodes()
@@ -298,6 +297,10 @@ public class Elaborator implements
     @Override
     public ElaborationResult visit(LValueIdentTree lValueIdentTree, ElaborationContext context) {
         ElaborationResult nameResult = lValueIdentTree.name().accept(this, context);
+
+        if (!context.symbolTable().isVariableDeclared(nameResult.name())) {
+            throw new SemanticException("The variable " + nameResult.name() + " is not declared.");
+        }
 
         Symbol variableSymbol = context.symbolTable().getCurrentScope().typeOf(nameResult.name());
 
