@@ -38,7 +38,9 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateConstantInstruction(RegisterAllocationResult allocationResult, IrIntConstantInstruction instruction) {
+    public void generateConstantInstruction(CodeGenerationContext generationContext, IrIntConstantInstruction instruction) {
+        RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
+
         instructionGenerator.generateIntConstInstruction(
                 allocationResult.nodeToRegisterMapping().get(instruction.target()),
                 instruction.constValue(),
@@ -46,7 +48,9 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateConstantInstruction(RegisterAllocationResult allocationResult, IrBoolConstantInstruction instruction) {
+    public void generateConstantInstruction(CodeGenerationContext generationContext, IrBoolConstantInstruction instruction) {
+        RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
+
         instructionGenerator.generateIntConstInstruction(
                 allocationResult.nodeToRegisterMapping().get(instruction.target()),
                 instruction.constValue() ? 1 : 0,
@@ -54,7 +58,9 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateMove(RegisterAllocationResult allocationResult, IrMoveInstruction instruction) {
+    public void generateMove(CodeGenerationContext generationContext, IrMoveInstruction instruction) {
+        RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
+
         instructionGenerator.generateMoveInstruction(
                 allocationResult.nodeToRegisterMapping().get(instruction.source()),
                 allocationResult.nodeToRegisterMapping().get(instruction.target()),
@@ -62,7 +68,9 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateAdd(RegisterAllocationResult allocationResult, IrAddInstruction instruction) {
+    public void generateAdd(CodeGenerationContext generationContext, IrAddInstruction instruction) {
+        RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
+
         Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
@@ -85,7 +93,9 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateSub(RegisterAllocationResult allocationResult, IrSubInstruction instruction) {
+    public void generateSub(CodeGenerationContext generationContext, IrSubInstruction instruction) {
+        RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
+
         Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
@@ -109,7 +119,9 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateMult(RegisterAllocationResult allocationResult, IrMulInstruction instruction) {
+    public void generateMult(CodeGenerationContext generationContext, IrMulInstruction instruction) {
+        RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
+
         Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
@@ -132,7 +144,9 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateDiv(RegisterAllocationResult allocationResult, IrDivInstruction instruction) {
+    public void generateDiv(CodeGenerationContext generationContext, IrDivInstruction instruction) {
+        RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
+
         instructionGenerator
                 .generateMoveInstruction(allocationResult.nodeToRegisterMapping().get(instruction.leftSrc()), X86Register.REG_AX, BitSize.BIT_32)
                 .generateSignExtendInstruction(BitSize.BIT_32)
@@ -141,7 +155,9 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateMod(RegisterAllocationResult allocationResult, IrModInstruction instruction) {
+    public void generateMod(CodeGenerationContext generationContext, IrModInstruction instruction) {
+        RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
+
         instructionGenerator
                 .generateMoveInstruction(allocationResult.nodeToRegisterMapping().get(instruction.leftSrc()), X86Register.REG_AX, BitSize.BIT_32)
                 .generateSignExtendInstruction(BitSize.BIT_32)
@@ -150,7 +166,9 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateLeftShift(RegisterAllocationResult allocationResult, IrLeftShiftInstruction instruction) {
+    public void generateLeftShift(CodeGenerationContext generationContext, IrLeftShiftInstruction instruction) {
+        RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
+
         Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
@@ -174,7 +192,9 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateRightShift(RegisterAllocationResult allocationResult, IrRightShiftInstruction instruction) {
+    public void generateRightShift(CodeGenerationContext generationContext, IrRightShiftInstruction instruction) {
+        RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
+
         Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
@@ -198,7 +218,9 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateBitwiseAnd(RegisterAllocationResult allocationResult, IrBitwiseAndInstruction instruction) {
+    public void generateBitwiseAnd(CodeGenerationContext generationContext, IrBitwiseAndInstruction instruction) {
+        RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
+
         Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
@@ -222,7 +244,9 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateBitwiseOr(RegisterAllocationResult allocationResult, IrBitwiseOrInstruction instruction) {
+    public void generateBitwiseOr(CodeGenerationContext generationContext, IrBitwiseOrInstruction instruction) {
+        RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
+
         Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
@@ -246,7 +270,9 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateBitwiseNot(RegisterAllocationResult allocationResult, IrBitwiseNotInstruction instruction) {
+    public void generateBitwiseNot(CodeGenerationContext generationContext, IrBitwiseNotInstruction instruction) {
+        RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
+
         Register sourceValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.src());
         Register targetValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
@@ -258,7 +284,9 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateBitwiseXor(RegisterAllocationResult allocationResult, IrBitwiseXorInstruction instruction) {
+    public void generateBitwiseXor(CodeGenerationContext generationContext, IrBitwiseXorInstruction instruction) {
+        RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
+
         Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
@@ -282,7 +310,9 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateEquals(RegisterAllocationResult allocationResult, IrEqualsInstruction instruction) {
+    public void generateEquals(CodeGenerationContext generationContext, IrEqualsInstruction instruction) {
+        RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
+
         Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
@@ -293,7 +323,9 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateUnequals(RegisterAllocationResult allocationResult, IrUnequalsInstruction instruction) {
+    public void generateUnequals(CodeGenerationContext generationContext, IrUnequalsInstruction instruction) {
+        RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
+
         Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
@@ -304,7 +336,9 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateGreaterThan(RegisterAllocationResult allocationResult, IrGreaterThanInstruction instruction) {
+    public void generateGreaterThan(CodeGenerationContext generationContext, IrGreaterThanInstruction instruction) {
+        RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
+
         Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
@@ -315,7 +349,9 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateLessThan(RegisterAllocationResult allocationResult, IrLessThanInstruction instruction) {
+    public void generateLessThan(CodeGenerationContext generationContext, IrLessThanInstruction instruction) {
+        RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
+
         Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
@@ -326,7 +362,9 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateGreaterThanOrEqual(RegisterAllocationResult allocationResult, IrGreaterThanOrEqualInstruction instruction) {
+    public void generateGreaterThanOrEqual(CodeGenerationContext generationContext, IrGreaterThanOrEqualInstruction instruction) {
+        RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
+
         Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
@@ -337,7 +375,9 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateLessThanOrEqual(RegisterAllocationResult allocationResult, IrLessThanOrEqualInstruction instruction) {
+    public void generateLessThanOrEqual(CodeGenerationContext generationContext, IrLessThanOrEqualInstruction instruction) {
+        RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
+
         Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
@@ -348,7 +388,9 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateNegation(RegisterAllocationResult allocationResult, IrNegateInstruction instruction) {
+    public void generateNegation(CodeGenerationContext generationContext, IrNegateInstruction instruction) {
+        RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
+
         Register sourceValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.src());
         Register targetValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
@@ -360,7 +402,20 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateReturn(RegisterAllocationResult allocationResult, IrReturnInstruction instruction) {
+    public void generateLogicalNot(CodeGenerationContext generationContext, IrLogicalNotInstruction instruction) {
+        RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
+
+        Register sourceValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.src());
+        Register targetValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
+
+        instructionGenerator.generateComparisonInstruction(new IntegerConstantParameter(0), sourceValueRegister, BitSize.BIT_32)
+                .generateSetConditionCodeInstruction(targetValueRegister, X86ConditionCode.EQUAL, BitSize.BIT_8);
+    }
+
+    @Override
+    public void generateReturn(CodeGenerationContext generationContext, IrReturnInstruction instruction) {
+        RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
+
         Register returnValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.src());
         if (returnValueRegister != X86Register.REG_AX) {
             instructionGenerator.generateMoveInstruction(returnValueRegister, X86Register.REG_AX, BitSize.BIT_32);
@@ -377,12 +432,39 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     }
 
     @Override
-    public void generateBranch(RegisterAllocationResult allocationResult, IrBranchInstruction instruction) {
-        //instructionGenerator.generateConditionalJumpInstruction()
+    public void generateBranch(CodeGenerationContext generationContext, IrBranchInstruction instruction) {
+
+        /*IrValueProducingInstruction comparisonInstruction
+                = generationContext.ssaValueByProducingInstructions().get(instruction.conditionValue());
+
+        X86ConditionCode jumpConditionCode = mapIrComparisonToX86ConditionCode(comparisonInstruction);*/
+
+        instructionGenerator.generateConditionalJumpInstruction(X86ConditionCode.EQUAL,
+                instruction.trueTarget().name(), BitSize.BIT_64);
+    }
+
+    private static boolean isComparisonInstruction(IrValueProducingInstruction instruction) {
+        return switch (instruction) {
+            case IrLessThanInstruction _, IrGreaterThanInstruction _, IrUnequalsInstruction _,
+                 IrLessThanOrEqualInstruction _, IrGreaterThanOrEqualInstruction _, IrEqualsInstruction _ -> true;
+            default -> false;
+        };
+    }
+
+    private static X86ConditionCode mapIrComparisonToX86ConditionCode(IrValueProducingInstruction comparisonInstruction) {
+        return switch (comparisonInstruction) {
+            case IrEqualsInstruction _ -> X86ConditionCode.EQUAL;
+            case IrUnequalsInstruction _ -> X86ConditionCode.NOT_EQUAL;
+            case IrLessThanInstruction _ -> X86ConditionCode.LESS_THAN;
+            case IrGreaterThanInstruction _ -> X86ConditionCode.GREATER_THAN;
+            case IrLessThanOrEqualInstruction _ -> X86ConditionCode.LESS_THAN_OR_EQUAL;
+            case IrGreaterThanOrEqualInstruction _ -> X86ConditionCode.GREATER_THAN_OR_EQUAL;
+            default -> throw new IllegalStateException("Unexpected value: " + comparisonInstruction);
+        };
     }
 
     @Override
-    public void generateJump(RegisterAllocationResult allocationResult, IrJumpInstruction instruction) {
+    public void generateJump(CodeGenerationContext generationContext, IrJumpInstruction instruction) {
         instructionGenerator.generateUnconditionalJumpInstruction(instruction.jumpTarget().name(), BitSize.BIT_64);
     }
 

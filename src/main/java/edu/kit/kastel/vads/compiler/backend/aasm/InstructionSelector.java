@@ -4,7 +4,9 @@ import edu.kit.kastel.vads.compiler.ir.data.*;
 import edu.kit.kastel.vads.compiler.ir.data.ValueProducingInstructions.*;
 import edu.kit.kastel.vads.compiler.ir.node.Node;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class InstructionSelector {
@@ -41,126 +43,132 @@ public class InstructionSelector {
             RegisterAllocationResult allocationResult = allocator.allocateRegisters(function);
 
             // TODO: De-SSA
-            generateFunction(function, codeGenerator, allocationResult);
+            CodeGenerationContext codeGenerationContext
+                    = CodeGenerationContext.createForFunction(function, allocationResult);
+
+            generateFunction(function, codeGenerator, codeGenerationContext);
         }
 
         instructionGenerator.generateFromString(NON_EXECUTABLE_STACK);
     }
 
-    private void generateFunction(IrFunction function, CodeGenerator codeGenerator, RegisterAllocationResult allocationResult) {
+    private void generateFunction(IrFunction function, CodeGenerator codeGenerator, CodeGenerationContext codeGenerationContext) {
         codeGenerator
                 .getX86InstructionGenerator()
                 .generateLabel(function.startBlock().name());
 
         codeGenerator.generateStackPointerPush();
 
-        int numberOfStackSlots = (int) allocationResult.registers().stream().filter(x -> x instanceof StackSlot).count();
+        int numberOfStackSlots = (int) codeGenerationContext.registerAllocationResult()
+                .registers().stream().filter(x -> x instanceof StackSlot).count();
         if (numberOfStackSlots > 0) {
             codeGenerator.generateStackAllocation(numberOfStackSlots);
         }
 
         Set<IrBlock> visitedBlocks = new HashSet<>();
         for (IrBlock block : function.blocks()) {
-            generateInstructionsForBlock(block, visitedBlocks, codeGenerator, allocationResult);
+            generateInstructionsForBlock(block, visitedBlocks, codeGenerator, codeGenerationContext);
         }
     }
 
-    private void generateInstructionsForBlock(IrBlock block, Set<IrBlock> processedBlocks, CodeGenerator codeGenerator, RegisterAllocationResult allocationResult) {
-        if (processedBlocks.contains(block)) {
-            return;
-        }
-
+    private void generateInstructionsForBlock(IrBlock block, Set<IrBlock> processedBlocks, CodeGenerator codeGenerator, CodeGenerationContext codeGenerationContext) {
         for (IrInstruction inst : block.getInstructions()) {
-            generateInstruction(inst, codeGenerator, allocationResult);
+            generateInstruction(inst, codeGenerator, codeGenerationContext);
         }
 
         processedBlocks.add(block);
 
         for (IrBlock successor : block.getSuccessorBlocks()) {
+            if (processedBlocks.contains(successor)) {
+                continue;
+            }
+
             codeGenerator
                     .getX86InstructionGenerator()
-                    .generateLabel(block.name());
+                    .generateLabel(successor.name());
 
-            generateInstructionsForBlock(successor, processedBlocks, codeGenerator, allocationResult);
+            generateInstructionsForBlock(successor, processedBlocks, codeGenerator, codeGenerationContext);
         }
     }
 
-    private void generateInstruction(IrInstruction instruction, CodeGenerator codeGenerator, RegisterAllocationResult allocationResult) {
+    private void generateInstruction(IrInstruction instruction, CodeGenerator codeGenerator, CodeGenerationContext codeGenerationContext) {
         switch (instruction) {
             case IrJumpInstruction jump:
-                codeGenerator.generateJump(allocationResult, jump);
+                codeGenerator.generateJump(codeGenerationContext, jump);
                 break;
             case IrReturnInstruction returnInstruction:
-                codeGenerator.generateReturn(allocationResult, returnInstruction);
+                codeGenerator.generateReturn(codeGenerationContext, returnInstruction);
                 break;
             case IrBranchInstruction branchInstruction:
+                codeGenerator.generateBranch(codeGenerationContext, branchInstruction);
                 break;
             case IrAddInstruction addInstruction:
-                codeGenerator.generateAdd(allocationResult, addInstruction);
+                codeGenerator.generateAdd(codeGenerationContext, addInstruction);
                 break;
             case IrBitwiseAndInstruction irBitwiseAndInstruction:
-                codeGenerator.generateBitwiseAnd(allocationResult, irBitwiseAndInstruction);
+                codeGenerator.generateBitwiseAnd(codeGenerationContext, irBitwiseAndInstruction);
                 break;
             case IrBitwiseNotInstruction irBitwiseNotInstruction:
-                codeGenerator.generateBitwiseNot(allocationResult, irBitwiseNotInstruction);
+                codeGenerator.generateBitwiseNot(codeGenerationContext, irBitwiseNotInstruction);
                 break;
             case IrBitwiseOrInstruction irBitwiseOrInstruction:
-                codeGenerator.generateBitwiseOr(allocationResult, irBitwiseOrInstruction);
+                codeGenerator.generateBitwiseOr(codeGenerationContext, irBitwiseOrInstruction);
                 break;
             case IrBitwiseXorInstruction irBitwiseXorInstruction:
-                codeGenerator.generateBitwiseXor(allocationResult, irBitwiseXorInstruction);
+                codeGenerator.generateBitwiseXor(codeGenerationContext, irBitwiseXorInstruction);
                 break;
             case IrBoolConstantInstruction irBoolConstantInstruction:
-                codeGenerator.generateConstantInstruction(allocationResult, irBoolConstantInstruction);
+                codeGenerator.generateConstantInstruction(codeGenerationContext, irBoolConstantInstruction);
                 break;
             case IrDivInstruction irDivInstruction:
-                codeGenerator.generateDiv(allocationResult, irDivInstruction);
+                codeGenerator.generateDiv(codeGenerationContext, irDivInstruction);
                 break;
             case IrEqualsInstruction irEqualsInstruction:
-                codeGenerator.generateEquals(allocationResult, irEqualsInstruction);
+                codeGenerator.generateEquals(codeGenerationContext, irEqualsInstruction);
                 break;
             case IrGreaterThanInstruction irGreaterThanInstruction:
-                codeGenerator.generateGreaterThan(allocationResult, irGreaterThanInstruction);
+                codeGenerator.generateGreaterThan(codeGenerationContext, irGreaterThanInstruction);
                 break;
             case IrGreaterThanOrEqualInstruction irGreaterThanOrEqualInstruction:
-                codeGenerator.generateGreaterThanOrEqual(allocationResult, irGreaterThanOrEqualInstruction);
+                codeGenerator.generateGreaterThanOrEqual(codeGenerationContext, irGreaterThanOrEqualInstruction);
                 break;
             case IrIntConstantInstruction irIntConstantInstruction:
-                codeGenerator.generateConstantInstruction(allocationResult, irIntConstantInstruction);
+                codeGenerator.generateConstantInstruction(codeGenerationContext, irIntConstantInstruction);
                 break;
             case IrLeftShiftInstruction irLeftShiftInstruction:
-                codeGenerator.generateLeftShift(allocationResult, irLeftShiftInstruction);
+                codeGenerator.generateLeftShift(codeGenerationContext, irLeftShiftInstruction);
                 break;
             case IrLessThanInstruction irLessThanInstruction:
-                codeGenerator.generateLessThan(allocationResult, irLessThanInstruction);
+                codeGenerator.generateLessThan(codeGenerationContext, irLessThanInstruction);
                 break;
             case IrLessThanOrEqualInstruction irLessThanOrEqualInstruction:
-                codeGenerator.generateLessThanOrEqual(allocationResult, irLessThanOrEqualInstruction);
+                codeGenerator.generateLessThanOrEqual(codeGenerationContext, irLessThanOrEqualInstruction);
                 break;
             case IrLogicalNotInstruction irLogicalNotInstruction:
+                codeGenerator.generateLogicalNot(codeGenerationContext, irLogicalNotInstruction);
                 break;
             case IrModInstruction irModInstruction:
-                codeGenerator.generateMod(allocationResult, irModInstruction);
+                codeGenerator.generateMod(codeGenerationContext, irModInstruction);
                 break;
             case IrMoveInstruction irMoveInstruction:
-                codeGenerator.generateMove(allocationResult, irMoveInstruction);
+                codeGenerator.generateMove(codeGenerationContext, irMoveInstruction);
                 break;
             case IrMulInstruction irMulInstruction:
-                codeGenerator.generateMult(allocationResult, irMulInstruction);
+                codeGenerator.generateMult(codeGenerationContext, irMulInstruction);
                 break;
             case IrNegateInstruction irNegateInstruction:
-                codeGenerator.generateNegation(allocationResult, irNegateInstruction);
+                codeGenerator.generateNegation(codeGenerationContext, irNegateInstruction);
                 break;
             case IrRightShiftInstruction irRightShiftInstruction:
-                codeGenerator.generateRightShift(allocationResult, irRightShiftInstruction);
+                codeGenerator.generateRightShift(codeGenerationContext, irRightShiftInstruction);
                 break;
             case IrSubInstruction irSubInstruction:
-                codeGenerator.generateSub(allocationResult, irSubInstruction);
+                codeGenerator.generateSub(codeGenerationContext, irSubInstruction);
                 break;
             case IrUnequalsInstruction irUnequalsInstruction:
-                codeGenerator.generateUnequals(allocationResult, irUnequalsInstruction);
+                codeGenerator.generateUnequals(codeGenerationContext, irUnequalsInstruction);
                 break;
-            case IrPhi irPhi:
+            case IrPhi _:
                 throw new IllegalArgumentException("Phi instruction is not supported");
         }
     }

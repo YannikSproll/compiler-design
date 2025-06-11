@@ -36,147 +36,153 @@ public final class DebugCodeGeneratorDecorator implements CodeGenerator {
     }
 
     @Override
-    public void generateConstantInstruction(RegisterAllocationResult allocationResult, IrIntConstantInstruction instruction) {
+    public void generateConstantInstruction(CodeGenerationContext generationContext, IrIntConstantInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateConstantInstruction(allocationResult, instruction);
+        codeGenerator.generateConstantInstruction(generationContext, instruction);
     }
 
     @Override
-    public void generateConstantInstruction(RegisterAllocationResult allocationResult, IrBoolConstantInstruction instruction) {
+    public void generateConstantInstruction(CodeGenerationContext generationContext, IrBoolConstantInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateConstantInstruction(allocationResult, instruction);
+        codeGenerator.generateConstantInstruction(generationContext, instruction);
     }
 
     @Override
-    public void generateMove(RegisterAllocationResult allocationResult, IrMoveInstruction instruction) {
+    public void generateMove(CodeGenerationContext generationContext, IrMoveInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateMove(allocationResult, instruction);
+        codeGenerator.generateMove(generationContext, instruction);
     }
 
     @Override
-    public void generateAdd(RegisterAllocationResult allocationResult, IrAddInstruction instruction) {
+    public void generateAdd(CodeGenerationContext generationContext, IrAddInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateAdd(allocationResult, instruction);
+        codeGenerator.generateAdd(generationContext, instruction);
     }
 
     @Override
-    public void generateSub(RegisterAllocationResult allocationResult, IrSubInstruction instruction) {
+    public void generateSub(CodeGenerationContext generationContext, IrSubInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateSub(allocationResult, instruction);
+        codeGenerator.generateSub(generationContext, instruction);
     }
 
     @Override
-    public void generateMult(RegisterAllocationResult allocationResult, IrMulInstruction instruction) {
+    public void generateMult(CodeGenerationContext generationContext, IrMulInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateMult(allocationResult, instruction);
+        codeGenerator.generateMult(generationContext, instruction);
     }
 
     @Override
-    public void generateDiv(RegisterAllocationResult allocationResult, IrDivInstruction instruction) {
+    public void generateDiv(CodeGenerationContext generationContext, IrDivInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateDiv(allocationResult, instruction);
+        codeGenerator.generateDiv(generationContext, instruction);
     }
 
     @Override
-    public void generateMod(RegisterAllocationResult allocationResult, IrModInstruction instruction) {
+    public void generateMod(CodeGenerationContext generationContext, IrModInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateMod(allocationResult, instruction);
+        codeGenerator.generateMod(generationContext, instruction);
     }
 
     @Override
-    public void generateLeftShift(RegisterAllocationResult allocationResult, IrLeftShiftInstruction instruction) {
+    public void generateLeftShift(CodeGenerationContext generationContext, IrLeftShiftInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateLeftShift(allocationResult, instruction);
+        codeGenerator.generateLeftShift(generationContext, instruction);
     }
 
     @Override
-    public void generateRightShift(RegisterAllocationResult allocationResult, IrRightShiftInstruction instruction) {
+    public void generateRightShift(CodeGenerationContext generationContext, IrRightShiftInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateRightShift(allocationResult, instruction);
+        codeGenerator.generateRightShift(generationContext, instruction);
     }
 
     @Override
-    public void generateBitwiseAnd(RegisterAllocationResult allocationResult, IrBitwiseAndInstruction instruction) {
+    public void generateBitwiseAnd(CodeGenerationContext generationContext, IrBitwiseAndInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateBitwiseAnd(allocationResult, instruction);
+        codeGenerator.generateBitwiseAnd(generationContext, instruction);
     }
 
     @Override
-    public void generateBitwiseOr(RegisterAllocationResult allocationResult, IrBitwiseOrInstruction instruction) {
+    public void generateBitwiseOr(CodeGenerationContext generationContext, IrBitwiseOrInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateBitwiseOr(allocationResult, instruction);
+        codeGenerator.generateBitwiseOr(generationContext, instruction);
     }
 
     @Override
-    public void generateBitwiseNot(RegisterAllocationResult allocationResult, IrBitwiseNotInstruction instruction) {
+    public void generateBitwiseNot(CodeGenerationContext generationContext, IrBitwiseNotInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateBitwiseNot(allocationResult, instruction);
+        codeGenerator.generateBitwiseNot(generationContext, instruction);
     }
 
     @Override
-    public void generateBitwiseXor(RegisterAllocationResult allocationResult, IrBitwiseXorInstruction instruction) {
+    public void generateBitwiseXor(CodeGenerationContext generationContext, IrBitwiseXorInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateBitwiseXor(allocationResult, instruction);
+        codeGenerator.generateBitwiseXor(generationContext, instruction);
     }
 
     @Override
-    public void generateEquals(RegisterAllocationResult allocationResult, IrEqualsInstruction instruction) {
+    public void generateEquals(CodeGenerationContext generationContext, IrEqualsInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateEquals(allocationResult, instruction);
+        codeGenerator.generateEquals(generationContext, instruction);
     }
 
     @Override
-    public void generateUnequals(RegisterAllocationResult allocationResult, IrUnequalsInstruction instruction) {
+    public void generateUnequals(CodeGenerationContext generationContext, IrUnequalsInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateUnequals(allocationResult, instruction);
+        codeGenerator.generateUnequals(generationContext, instruction);
     }
 
     @Override
-    public void generateGreaterThan(RegisterAllocationResult allocationResult, IrGreaterThanInstruction instruction) {
+    public void generateGreaterThan(CodeGenerationContext generationContext, IrGreaterThanInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateGreaterThan(allocationResult, instruction);
+        codeGenerator.generateGreaterThan(generationContext, instruction);
     }
 
     @Override
-    public void generateLessThan(RegisterAllocationResult allocationResult, IrLessThanInstruction instruction) {
+    public void generateLessThan(CodeGenerationContext generationContext, IrLessThanInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateLessThan(allocationResult, instruction);
+        codeGenerator.generateLessThan(generationContext, instruction);
     }
 
     @Override
-    public void generateGreaterThanOrEqual(RegisterAllocationResult allocationResult, IrGreaterThanOrEqualInstruction instruction) {
+    public void generateGreaterThanOrEqual(CodeGenerationContext generationContext, IrGreaterThanOrEqualInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateGreaterThanOrEqual(allocationResult, instruction);
+        codeGenerator.generateGreaterThanOrEqual(generationContext, instruction);
     }
 
     @Override
-    public void generateLessThanOrEqual(RegisterAllocationResult allocationResult, IrLessThanOrEqualInstruction instruction) {
+    public void generateLessThanOrEqual(CodeGenerationContext generationContext, IrLessThanOrEqualInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateLessThanOrEqual(allocationResult, instruction);
+        codeGenerator.generateLessThanOrEqual(generationContext, instruction);
     }
 
     @Override
-    public void generateNegation(RegisterAllocationResult allocationResult, IrNegateInstruction instruction) {
+    public void generateNegation(CodeGenerationContext generationContext, IrNegateInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateNegation(allocationResult, instruction);
+        codeGenerator.generateNegation(generationContext, instruction);
     }
 
     @Override
-    public void generateReturn(RegisterAllocationResult allocationResult, IrReturnInstruction instruction) {
+    public void generateLogicalNot(CodeGenerationContext generationContext, IrLogicalNotInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateReturn(allocationResult, instruction);
+        codeGenerator.generateLogicalNot(generationContext, instruction);
     }
 
     @Override
-    public void generateBranch(RegisterAllocationResult allocationResult, IrBranchInstruction instruction) {
+    public void generateReturn(CodeGenerationContext generationContext, IrReturnInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateBranch(allocationResult, instruction);
+        codeGenerator.generateReturn(generationContext, instruction);
     }
 
     @Override
-    public void generateJump(RegisterAllocationResult allocationResult, IrJumpInstruction instruction) {
+    public void generateBranch(CodeGenerationContext generationContext, IrBranchInstruction instruction) {
         generateLineDebugging(instruction);
-        codeGenerator.generateJump(allocationResult, instruction);
+        codeGenerator.generateBranch(generationContext, instruction);
+    }
+
+    @Override
+    public void generateJump(CodeGenerationContext generationContext, IrJumpInstruction instruction) {
+        generateLineDebugging(instruction);
+        codeGenerator.generateJump(generationContext, instruction);
     }
 
     @Override

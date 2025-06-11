@@ -90,7 +90,7 @@ public final class X86InstructionLiteralFormatter {
         BIT_8_INSTRUCTION_NAME_MAP.put(X86Instruction.POP, "pop");
         BIT_8_INSTRUCTION_NAME_MAP.put(X86Instruction.LEFT_SHIFT, "sal");
         BIT_8_INSTRUCTION_NAME_MAP.put(X86Instruction.RIGHT_SHIFT, "sar");
-        BIT_8_INSTRUCTION_NAME_MAP.put(X86Instruction.COMPARISON, "cmp");
+        BIT_8_INSTRUCTION_NAME_MAP.put(X86Instruction.COMPARISON, "cmpb");
         BIT_8_INSTRUCTION_NAME_MAP.put(X86Instruction.SET_CONDITION_CODE, "set");
         BIT_8_INSTRUCTION_NAME_MAP.put(X86Instruction.BITWISE_AND, "and");
         BIT_8_INSTRUCTION_NAME_MAP.put(X86Instruction.BITWISE_OR, "or");
@@ -115,7 +115,7 @@ public final class X86InstructionLiteralFormatter {
         BIT_32_INSTRUCTION_NAME_MAP.put(X86Instruction.POP, "pop");
         BIT_32_INSTRUCTION_NAME_MAP.put(X86Instruction.LEFT_SHIFT, "sal");
         BIT_32_INSTRUCTION_NAME_MAP.put(X86Instruction.RIGHT_SHIFT, "sar");
-        BIT_32_INSTRUCTION_NAME_MAP.put(X86Instruction.COMPARISON, "cmp");
+        BIT_32_INSTRUCTION_NAME_MAP.put(X86Instruction.COMPARISON, "cmpl");
         BIT_32_INSTRUCTION_NAME_MAP.put(X86Instruction.SET_CONDITION_CODE, "set");
         BIT_32_INSTRUCTION_NAME_MAP.put(X86Instruction.BITWISE_AND, "and");
         BIT_32_INSTRUCTION_NAME_MAP.put(X86Instruction.BITWISE_OR, "or");
@@ -140,7 +140,7 @@ public final class X86InstructionLiteralFormatter {
         BIT_64_INSTRUCTION_NAME_MAP.put(X86Instruction.POP, "pop");
         BIT_64_INSTRUCTION_NAME_MAP.put(X86Instruction.LEFT_SHIFT, "sal");
         BIT_64_INSTRUCTION_NAME_MAP.put(X86Instruction.RIGHT_SHIFT, "sar");
-        BIT_64_INSTRUCTION_NAME_MAP.put(X86Instruction.COMPARISON, "cmp");
+        BIT_64_INSTRUCTION_NAME_MAP.put(X86Instruction.COMPARISON, "cmpq");
         BIT_64_INSTRUCTION_NAME_MAP.put(X86Instruction.SET_CONDITION_CODE, "set");
         BIT_64_INSTRUCTION_NAME_MAP.put(X86Instruction.BITWISE_AND, "and");
         BIT_64_INSTRUCTION_NAME_MAP.put(X86Instruction.BITWISE_OR, "or");

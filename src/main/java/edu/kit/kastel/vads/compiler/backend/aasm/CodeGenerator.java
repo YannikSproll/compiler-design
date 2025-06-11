@@ -12,37 +12,38 @@ public interface CodeGenerator {
     void generateStackAllocation(int numberOfStackSlots);
     void generateStackDeallocation(int numberOfStackSlots);
 
-    void generateConstantInstruction(RegisterAllocationResult allocationResult, IrIntConstantInstruction instruction);
-    void generateConstantInstruction(RegisterAllocationResult allocationResult, IrBoolConstantInstruction instruction);
+    void generateConstantInstruction(CodeGenerationContext generationContext, IrIntConstantInstruction instruction);
+    void generateConstantInstruction(CodeGenerationContext generationContext, IrBoolConstantInstruction instruction);
 
-    void generateMove(RegisterAllocationResult allocationResult, IrMoveInstruction instruction);
+    void generateMove(CodeGenerationContext generationContext, IrMoveInstruction instruction);
 
-    void generateAdd(RegisterAllocationResult allocationResult, IrAddInstruction instruction);
-    void generateSub(RegisterAllocationResult allocationResult, IrSubInstruction instruction);
-    void generateMult(RegisterAllocationResult allocationResult, IrMulInstruction instruction);
-    void generateDiv(RegisterAllocationResult allocationResult, IrDivInstruction instruction);
-    void generateMod(RegisterAllocationResult allocationResult, IrModInstruction instruction);
-    void generateLeftShift(RegisterAllocationResult allocationResult, IrLeftShiftInstruction instruction);
-    void generateRightShift(RegisterAllocationResult allocationResult, IrRightShiftInstruction instruction);
+    void generateAdd(CodeGenerationContext generationContext, IrAddInstruction instruction);
+    void generateSub(CodeGenerationContext generationContext, IrSubInstruction instruction);
+    void generateMult(CodeGenerationContext generationContext, IrMulInstruction instruction);
+    void generateDiv(CodeGenerationContext generationContext, IrDivInstruction instruction);
+    void generateMod(CodeGenerationContext generationContext, IrModInstruction instruction);
+    void generateLeftShift(CodeGenerationContext generationContext, IrLeftShiftInstruction instruction);
+    void generateRightShift(CodeGenerationContext generationContext, IrRightShiftInstruction instruction);
 
-    void generateBitwiseAnd(RegisterAllocationResult allocationResult, IrBitwiseAndInstruction instruction);
-    void generateBitwiseOr(RegisterAllocationResult allocationResult, IrBitwiseOrInstruction instruction);
-    void generateBitwiseNot(RegisterAllocationResult allocationResult, IrBitwiseNotInstruction instruction);
-    void generateBitwiseXor(RegisterAllocationResult allocationResult, IrBitwiseXorInstruction instruction);
+    void generateBitwiseAnd(CodeGenerationContext generationContext, IrBitwiseAndInstruction instruction);
+    void generateBitwiseOr(CodeGenerationContext generationContext, IrBitwiseOrInstruction instruction);
+    void generateBitwiseNot(CodeGenerationContext generationContext, IrBitwiseNotInstruction instruction);
+    void generateBitwiseXor(CodeGenerationContext generationContext, IrBitwiseXorInstruction instruction);
 
-    void generateEquals(RegisterAllocationResult allocationResult, IrEqualsInstruction instruction);
-    void generateUnequals(RegisterAllocationResult allocationResult, IrUnequalsInstruction instruction);
-    void generateGreaterThan(RegisterAllocationResult allocationResult, IrGreaterThanInstruction instruction);
-    void generateLessThan(RegisterAllocationResult allocationResult, IrLessThanInstruction instruction);
-    void generateGreaterThanOrEqual(RegisterAllocationResult allocationResult, IrGreaterThanOrEqualInstruction instruction);
-    void generateLessThanOrEqual(RegisterAllocationResult allocationResult, IrLessThanOrEqualInstruction instruction);
+    void generateEquals(CodeGenerationContext generationContext, IrEqualsInstruction instruction);
+    void generateUnequals(CodeGenerationContext generationContext, IrUnequalsInstruction instruction);
+    void generateGreaterThan(CodeGenerationContext generationContext, IrGreaterThanInstruction instruction);
+    void generateLessThan(CodeGenerationContext generationContext, IrLessThanInstruction instruction);
+    void generateGreaterThanOrEqual(CodeGenerationContext generationContext, IrGreaterThanOrEqualInstruction instruction);
+    void generateLessThanOrEqual(CodeGenerationContext generationContext, IrLessThanOrEqualInstruction instruction);
 
-    void generateNegation(RegisterAllocationResult allocationResult, IrNegateInstruction instruction);
+    void generateNegation(CodeGenerationContext generationContext, IrNegateInstruction instruction);
+    void generateLogicalNot(CodeGenerationContext generationContext, IrLogicalNotInstruction instruction);
 
-    void generateReturn(RegisterAllocationResult allocationResult, IrReturnInstruction instruction);
+    void generateReturn(CodeGenerationContext generationContext, IrReturnInstruction instruction);
 
-    void generateBranch(RegisterAllocationResult allocationResult, IrBranchInstruction instruction);
-    void generateJump(RegisterAllocationResult allocationResult, IrJumpInstruction instruction);
+    void generateBranch(CodeGenerationContext generationContext, IrBranchInstruction instruction);
+    void generateJump(CodeGenerationContext generationContext, IrJumpInstruction instruction);
 
     X86InstructionGenerator getX86InstructionGenerator();
 }
