@@ -206,12 +206,12 @@ public class X86InstructionGenerator {
         return this;
     }
 
-    public X86InstructionGenerator generateSetConditionCodeInstruction(InstructionParameter destinationRegister, X86ConditionCode conditionCode, BitSize bitSize) {
+    public X86InstructionGenerator generateSetConditionCodeInstruction(InstructionParameter destinationRegister, X86ConditionCode conditionCode) {
         generateIndentationSpace();
-        builder.append(formatter.formatInstruction(X86Instruction.SET_CONDITION_CODE, bitSize))
+        builder.append(formatter.formatInstruction(X86Instruction.SET_CONDITION_CODE, BitSize.BIT_8))
                 .append(formatter.formatConditionCode(conditionCode))
                 .append(" ")
-                .append(formatInstructionParameter(destinationRegister, bitSize))
+                .append(formatInstructionParameter(destinationRegister, BitSize.BIT_8))
                 .append(NEW_LINE);
         return this;
     }

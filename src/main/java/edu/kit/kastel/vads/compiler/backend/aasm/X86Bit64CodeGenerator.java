@@ -5,9 +5,6 @@ import edu.kit.kastel.vads.compiler.ir.data.IrBranchInstruction;
 import edu.kit.kastel.vads.compiler.ir.data.IrJumpInstruction;
 import edu.kit.kastel.vads.compiler.ir.data.IrReturnInstruction;
 import edu.kit.kastel.vads.compiler.ir.data.ValueProducingInstructions.*;
-import edu.kit.kastel.vads.compiler.ir.node.*;
-
-import static edu.kit.kastel.vads.compiler.ir.util.NodeSupport.predecessorSkipProj;
 
 public class X86Bit64CodeGenerator implements CodeGenerator {
     private final X86InstructionGenerator instructionGenerator;
@@ -333,7 +330,7 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
 
         instructionGenerator
                 .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, BitSize.BIT_32)
-                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.EQUAL, BitSize.BIT_32);
+                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.EQUAL);
     }
 
     @Override
@@ -346,7 +343,7 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
 
         instructionGenerator
                 .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, BitSize.BIT_32)
-                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.NOT_EQUAL, BitSize.BIT_32);
+                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.NOT_EQUAL);
     }
 
     @Override
@@ -359,7 +356,7 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
 
         instructionGenerator
                 .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, BitSize.BIT_32)
-                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.GREATER_THAN, BitSize.BIT_32);
+                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.GREATER_THAN);
     }
 
     @Override
@@ -372,7 +369,7 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
 
         instructionGenerator
                 .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, BitSize.BIT_32)
-                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.LESS_THAN, BitSize.BIT_32);
+                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.LESS_THAN);
     }
 
     @Override
@@ -385,7 +382,7 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
 
         instructionGenerator
                 .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, BitSize.BIT_32)
-                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.GREATER_THAN_OR_EQUAL, BitSize.BIT_32);
+                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.GREATER_THAN_OR_EQUAL);
     }
 
     @Override
@@ -398,7 +395,7 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
 
         instructionGenerator
                 .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, BitSize.BIT_32)
-                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.LESS_THAN_OR_EQUAL, BitSize.BIT_32);
+                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.LESS_THAN_OR_EQUAL);
     }
 
     @Override
@@ -422,8 +419,9 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register sourceValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.src());
         Register targetValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
-        instructionGenerator.generateComparisonInstruction(new IntegerConstantParameter(0), sourceValueRegister, BitSize.BIT_32)
-                .generateSetConditionCodeInstruction(targetValueRegister, X86ConditionCode.EQUAL, BitSize.BIT_8);
+        generateMove(allocationResult, sourceValueRegister, targetValueRegister, BitSize.BIT_8);
+        instructionGenerator.generateComparisonInstruction(new IntegerConstantParameter(0), targetValueRegister, BitSize.BIT_8)
+                .generateSetConditionCodeInstruction(targetValueRegister, X86ConditionCode.EQUAL);
     }
 
     @Override
@@ -447,14 +445,28 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
 
     @Override
     public void generateBranch(CodeGenerationContext generationContext, IrBranchInstruction instruction) {
-
-        /*IrValueProducingInstruction comparisonInstruction
+        IrValueProducingInstruction conditionProducingInstruction
                 = generationContext.ssaValueByProducingInstructions().get(instruction.conditionValue());
 
-        X86ConditionCode jumpConditionCode = mapIrComparisonToX86ConditionCode(comparisonInstruction);*/
-
-        instructionGenerator.generateConditionalJumpInstruction(X86ConditionCode.EQUAL,
-                instruction.trueTarget().name(), BitSize.BIT_64);
+        if (isComparisonInstruction(conditionProducingInstruction)) {
+            // Instruction is a comparision -> use flags directly
+            instructionGenerator
+                    .generateConditionalJumpInstruction(
+                            mapIrComparisonToX86ConditionCode(conditionProducingInstruction),
+                            instruction.trueTarget().name(),
+                            BitSize.BIT_64)
+                    .generateUnconditionalJumpInstruction(
+                            instruction.falseTarget().name(),
+                            BitSize.BIT_64);
+        } else {
+            // Instruction is bool expression or successor of comparison
+            Register conditionValueRegister = generationContext.registerAllocationResult()
+                    .nodeToRegisterMapping().get(instruction.conditionValue());
+            instructionGenerator
+                    .generateComparisonInstruction(new IntegerConstantParameter(1), conditionValueRegister, BitSize.BIT_8)
+                    .generateConditionalJumpInstruction(X86ConditionCode.EQUAL, instruction.trueTarget().name(), BitSize.BIT_64)
+                    .generateUnconditionalJumpInstruction(instruction.falseTarget().name(), BitSize.BIT_64);
+        }
     }
 
     private static boolean isComparisonInstruction(IrValueProducingInstruction instruction) {

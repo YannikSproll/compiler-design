@@ -66,9 +66,8 @@ public class InstructionSelector {
         }
 
         Set<IrBlock> visitedBlocks = new HashSet<>();
-        for (IrBlock block : function.blocks()) {
-            generateInstructionsForBlock(block, visitedBlocks, codeGenerator, codeGenerationContext);
-        }
+
+        generateInstructionsForBlock(function.startBlock(), visitedBlocks, codeGenerator, codeGenerationContext);
     }
 
     private void generateInstructionsForBlock(IrBlock block, Set<IrBlock> processedBlocks, CodeGenerator codeGenerator, CodeGenerationContext codeGenerationContext) {
