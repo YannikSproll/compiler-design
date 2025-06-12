@@ -2,8 +2,12 @@ package edu.kit.kastel.vads.compiler.backend.aasm;
 
 import edu.kit.kastel.vads.compiler.backend.regalloc.Register;
 import edu.kit.kastel.vads.compiler.backend.regalloc.RegisterAllocator;
+import edu.kit.kastel.vads.compiler.ir.IrBlock;
 import edu.kit.kastel.vads.compiler.ir.IrFunction;
+import edu.kit.kastel.vads.compiler.ir.IrFunctionPrinter;
 import edu.kit.kastel.vads.compiler.ir.SSAValue;
+import edu.kit.kastel.vads.compiler.ir.ValueProducingInstructions.IrMoveInstruction;
+import edu.kit.kastel.vads.compiler.ir.ValueProducingInstructions.IrPhi;
 
 import java.util.*;
 import java.util.function.Function;
@@ -19,9 +23,7 @@ public class AasmRegisterAllocator implements RegisterAllocator {
     }
 
     @Override
-    public RegisterAllocationResult allocateRegisters(IrFunction irFunction) {
-        LivenessAnalysisResult livenessAnalysisResult = livenessAnalysis.run(irFunction);
-
+    public RegisterAllocationResult allocateRegisters(IrFunction irFunction, LivenessAnalysisResult livenessAnalysisResult) {
         InterferenceGraph interferenceGraph = InterferenceGraph.createFrom(irFunction.blocks(), livenessAnalysisResult);
 
         List<SSAValue> simplicialEliminationOrderedNodes = getSimplicialEliminationOrderedNodes(interferenceGraph);
@@ -29,11 +31,10 @@ public class AasmRegisterAllocator implements RegisterAllocator {
         Map<SSAValue, Integer> coloring = colorInterferenceGraph(interferenceGraph, simplicialEliminationOrderedNodes);
 
         ColorToRegisterMappingResult mappingResult = mapColorsToRegisters(coloring);
+
+
         return new RegisterAllocationResult(livenessAnalysisResult, mappingResult.mapping(), mappingResult.tempRegister(), mappingResult.registers());
     }
-
-
-
 
     private List<SSAValue> getSimplicialEliminationOrderedNodes(
             InterferenceGraph interferenceGraphRef) {

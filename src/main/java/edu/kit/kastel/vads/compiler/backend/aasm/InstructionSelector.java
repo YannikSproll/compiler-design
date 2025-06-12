@@ -3,8 +3,11 @@ package edu.kit.kastel.vads.compiler.backend.aasm;
 import edu.kit.kastel.vads.compiler.ir.*;
 import edu.kit.kastel.vads.compiler.ir.ValueProducingInstructions.*;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class InstructionSelector {
 
@@ -37,9 +40,12 @@ public class InstructionSelector {
             LivenessAnalysis livenessAnalysis = new LivenessAnalysis();
             AasmRegisterAllocator allocator = new AasmRegisterAllocator(livenessAnalysis);
 
-            RegisterAllocationResult allocationResult = allocator.allocateRegisters(function);
+            deSSA(function);
 
-            // TODO: De-SSA
+            LivenessAnalysisResult livenessAnalysisResult = livenessAnalysis.run(function);
+
+            RegisterAllocationResult allocationResult = allocator.allocateRegisters(function, livenessAnalysisResult);
+
             CodeGenerationContext codeGenerationContext
                     = CodeGenerationContext.createForFunction(function, allocationResult);
 
@@ -48,6 +54,44 @@ public class InstructionSelector {
 
         instructionGenerator.generateFromString(NON_EXECUTABLE_STACK);
     }
+
+
+    private void deSSA(IrFunction function) {
+        for (IrBlock block : function.blocks()) {
+            Set<IrPhi> blockPhis = block.getInstructions()
+                    .stream()
+                    .filter(irInstruction -> irInstruction instanceof IrPhi)
+                    .map(irInstruction -> (IrPhi) irInstruction)
+                    .collect(Collectors.toSet());
+
+            if (blockPhis.isEmpty()) {
+                continue;
+            }
+
+            Map<IrBlock, Set<PhiMove>> phiMovesPerBlock = new HashMap<>();
+            for (IrPhi phi : blockPhis) {
+                for (IrPhi.IrPhiItem phiItem : phi.sources()) {
+                    phiMovesPerBlock.computeIfAbsent(phiItem.block(), __ -> new HashSet<>())
+                            .add(new PhiMove(phi.target(), phiItem.value()));
+                }
+            }
+
+            block.removePhis();
+
+            for (Map.Entry<IrBlock, Set<PhiMove>> entry : phiMovesPerBlock.entrySet()) {
+                IrBlock targetBlock = entry.getKey();
+                for (PhiMove phiMove : entry.getValue()) {
+                    IrMoveInstruction moveToInsert = new IrMoveInstruction(phiMove.target(), phiMove.source());
+                    // Last instruction is always jump. -> Insert before jump
+                    // TODO: Parallel read resolving
+                    targetBlock.insertInstruction(targetBlock.getInstructions().size() - 1, moveToInsert);
+                }
+            }
+        }
+    }
+
+    private record PhiMove(SSAValue target, SSAValue source) {}
+
 
     private void generateFunction(IrFunction function, CodeGenerator codeGenerator, CodeGenerationContext codeGenerationContext) {
         codeGenerator

@@ -10,7 +10,7 @@ public class IRStep {
     public IrFile run(TypedFile typedFile) {
         SsaConstruction construction = new SsaConstruction();
         IrFile irFile = construction.generateIr(typedFile);
-        new IrFunctionPrinter().print(irFile);
+        //new IrFunctionPrinter().print(irFile);
 
         return irFile;
     }

@@ -355,7 +355,7 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
         instructionGenerator
-                .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, BitSize.BIT_32)
+                .generateComparisonInstruction(rightOperandRegister, leftOperandRegister, BitSize.BIT_32)
                 .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.GREATER_THAN);
     }
 
@@ -368,7 +368,7 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
         instructionGenerator
-                .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, BitSize.BIT_32)
+                .generateComparisonInstruction(rightOperandRegister, leftOperandRegister, BitSize.BIT_32)
                 .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.LESS_THAN);
     }
 
@@ -381,7 +381,7 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
         instructionGenerator
-                .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, BitSize.BIT_32)
+                .generateComparisonInstruction(rightOperandRegister, leftOperandRegister, BitSize.BIT_32)
                 .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.GREATER_THAN_OR_EQUAL);
     }
 
@@ -394,7 +394,7 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
         instructionGenerator
-                .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, BitSize.BIT_32)
+                .generateComparisonInstruction(rightOperandRegister, leftOperandRegister, BitSize.BIT_32)
                 .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.LESS_THAN_OR_EQUAL);
     }
 

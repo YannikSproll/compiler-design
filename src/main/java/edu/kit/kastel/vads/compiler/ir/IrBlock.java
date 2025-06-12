@@ -1,5 +1,7 @@
 package edu.kit.kastel.vads.compiler.ir;
 
+import edu.kit.kastel.vads.compiler.ir.ValueProducingInstructions.IrPhi;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -53,5 +55,9 @@ public final class IrBlock {
     }
     public void insertInstruction(int index, IrInstruction instruction) {
         instructions.add(index, instruction);
+    }
+
+    public void removePhis() {
+        instructions.removeIf(irInstruction -> irInstruction instanceof IrPhi);
     }
 }
