@@ -5,6 +5,7 @@ public interface SSAConstructionResult {
     default IrFile asFile() { throw new IllegalStateException("SSAConstructionResult is not an ir file"); }
     default IrFunction asFunction() { throw new IllegalStateException("SSAConstructionResult is not a function"); }
     default SSAValue asSSAValue() { throw new IllegalStateException("SSAConstructionResult is not a SSAValue"); }
+    default TerminationType asTerminationType() { throw new IllegalStateException("SSAConstructionResult is not a TerminationType"); }
 
     static SSAConstructionResult ssaValue(SSAValue value) {
         return new SSAValueResult(value);
@@ -18,11 +19,20 @@ public interface SSAConstructionResult {
         return new FunctionResult(value);
     }
 
-    static SSAConstructionResult empty() {
-        return new EmptyResult();
+    static SSAConstructionResult statement() {
+        return new StatementResult(TerminationType.NONE);
     }
 
-    record EmptyResult () implements SSAConstructionResult { }
+    static SSAConstructionResult statement(TerminationType terminationType) {
+        return new StatementResult(terminationType);
+    }
+
+    record StatementResult(TerminationType terminationType) implements SSAConstructionResult {
+        @Override
+        public TerminationType asTerminationType() {
+            return terminationType;
+        }
+    }
 
     record FileResult(IrFile file) implements SSAConstructionResult {
         @Override
@@ -42,6 +52,20 @@ public interface SSAConstructionResult {
         @Override
         public SSAValue asSSAValue() {
             return value;
+        }
+    }
+
+    enum TerminationType {
+        NONE,
+        WEAK,
+        STRONG;
+
+        TerminationType merge(TerminationType other) {
+            return switch (this) {
+                case STRONG -> other;
+                case WEAK -> other == NONE ? NONE : WEAK;
+                case NONE -> NONE;
+            };
         }
     }
 }

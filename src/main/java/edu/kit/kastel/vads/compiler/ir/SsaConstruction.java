@@ -29,7 +29,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
                 assignment.lValue().asVariable().symbol(),
                 moveInstruction.target());
 
-        return SSAConstructionResult.empty();
+        return SSAConstructionResult.statement();
     }
 
     @Override
@@ -65,9 +65,13 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
     @Override
     public SSAConstructionResult visit(TypedBlock block, SsaConstructionContext context) {
         for (TypedStatement statement : block.statements()) {
-            statement.accept(this, context);
+            SSAConstructionResult result = statement.accept(this, context);
+            if (result.asTerminationType() != SSAConstructionResult.TerminationType.NONE) {
+                return SSAConstructionResult.statement(result.asTerminationType());
+            }
         }
-        return SSAConstructionResult.empty();
+
+        return SSAConstructionResult.statement();
     }
 
     @Override
@@ -82,7 +86,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
     @Override
     public SSAConstructionResult visit(TypedBreak breakStatement, SsaConstructionContext context) {
         generateJumpInstruction(context.currentBlock(), context.getLoopContext().exitLoopBlock());
-        return SSAConstructionResult.empty();
+        return SSAConstructionResult.statement(SSAConstructionResult.TerminationType.WEAK);
     }
 
     @Override
@@ -119,7 +123,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
     @Override
     public SSAConstructionResult visit(TypedContinue continueStatement, SsaConstructionContext context) {
         generateJumpInstruction(context.currentBlock(), context.getLoopContext().reevaluateConditionBlock());
-        return SSAConstructionResult.empty();
+        return SSAConstructionResult.statement(SSAConstructionResult.TerminationType.WEAK);
     }
 
     @Override
@@ -135,7 +139,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
             context.currentBlock().addInstruction(moveInstruction);
         }
 
-        return SSAConstructionResult.empty();
+        return SSAConstructionResult.statement();
     }
 
     @Override
@@ -178,30 +182,52 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
             generateBranchInstruction(conditionResult.asSSAValue(), context.currentBlock(), thenBlock, elseBlock);
 
             context.newCurrentBlock(elseBlock);
-            ifStatement.elseStatement().get().accept(this, context);
-            generateJumpInstruction(context.currentBlock(), fBlock);
+            SSAConstructionResult elseResult = ifStatement.elseStatement().get().accept(this, context);
+            if (elseResult.asTerminationType() == SSAConstructionResult.TerminationType.NONE) {
+                // If it terminates then a jump or return is already generated
+                // So only generate jump if else does not terminate
+                generateJumpInstruction(context.currentBlock(), fBlock);
+            }
 
             elseValues = context.getLatestSSAValues(context.currentBlock());
 
             context.newCurrentBlock(thenBlock);
-            ifStatement.thenStatement().accept(this, context);
-            generateJumpInstruction(context.currentBlock(), fBlock);
+            SSAConstructionResult thenResult = ifStatement.thenStatement().accept(this, context);
+            if (thenResult.asTerminationType() == SSAConstructionResult.TerminationType.NONE) {
+                // If it terminates then a jump or return is already generated
+                // So only generate jump if else does not terminate
+                generateJumpInstruction(context.currentBlock(), fBlock);
+            }
 
             thenValues = context.getLatestSSAValues(context.currentBlock());
+
+            if (thenResult.asTerminationType() == SSAConstructionResult.TerminationType.STRONG
+                && elseResult.asTerminationType() == SSAConstructionResult.TerminationType.STRONG) {
+                // Both branches return
+                // No need for further phi nodes.
+                return SSAConstructionResult.statement(SSAConstructionResult.TerminationType.STRONG);
+            }
 
             List<IrPhi> phis = createPhis(elseBlock, elseValues, thenBlock, thenValues, context);
             context.newCurrentBlock(fBlock);
             for (IrPhi phi : phis) {
                 context.currentBlock().addInstruction(phi);
             }
+
+            return SSAConstructionResult.statement(
+                    elseResult.asTerminationType().merge(
+                            thenResult.asTerminationType()));
         } else {
             generateBranchInstruction(conditionResult.asSSAValue(), context.currentBlock(), thenBlock, fBlock);
 
             elseValues = context.getLatestSSAValues(context.currentBlock());
 
             context.newCurrentBlock(thenBlock);
-            ifStatement.thenStatement().accept(this, context);
-            generateJumpInstruction(context.currentBlock(), fBlock);
+            SSAConstructionResult thenResult = ifStatement.thenStatement().accept(this, context);
+
+            if (thenResult.asTerminationType() == SSAConstructionResult.TerminationType.NONE) {
+                generateJumpInstruction(context.currentBlock(), fBlock);
+            }
 
             thenValues = context.getLatestSSAValues(context.currentBlock());
 
@@ -210,9 +236,9 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
             for (IrPhi phi : phis) {
                 context.currentBlock().addInstruction(phi);
             }
-        }
 
-        return SSAConstructionResult.empty();
+            return SSAConstructionResult.statement(thenResult.asTerminationType());
+        }
     }
 
     private static void generateJumpInstruction(IrBlock from, IrBlock to) {
@@ -270,11 +296,6 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
         IrBlock conditionEvaluationBlock = context.createBlock("loop_condition");
         IrBlock loopExitBlock = context.createBlock("loop_exit");
 
-        LoopContext loopContext = new LoopContext(
-                loop.postIterationStatement().isPresent() ? postIterationStatementBlock : conditionEvaluationBlock,
-                loopExitBlock);
-        context.enterLoop(loopContext);
-
         // Generate skip loop if condition is false initially
         SSAConstructionResult headerConditionResult = loop.conditionExpression().accept(this, context);
 
@@ -283,19 +304,40 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
         IrBlock preLoopBlock = context.currentBlock();
         Map<Symbol, SSAValue> preLoopValues = context.getLatestSSAValues(preLoopBlock);
 
+        LoopContext loopContext = new LoopContext(
+                loop.postIterationStatement().isPresent() ? postIterationStatementBlock : conditionEvaluationBlock,
+                loopExitBlock);
+        context.enterLoop(loopContext);
+
         // Generate body block
         context.newCurrentBlock(bodyBlock);
-        loop.body().accept(this, context);
+        SSAConstructionResult bodyResult = loop.body().accept(this, context);
+
+        context.exitLoop(loopContext);
+
+        if (bodyResult.asTerminationType() == SSAConstructionResult.TerminationType.STRONG) {
+            // Body ends in a return statements on all paths
+            // => Post condition and branch are dead code
+
+            context.newCurrentBlock(loopExitBlock);
+            // Return none because loop might not be executed
+            return SSAConstructionResult.statement(SSAConstructionResult.TerminationType.NONE);
+        }
 
         List<IrPhi> phis;
 
         if (loop.postIterationStatement().isPresent()) {
-            generateJumpInstruction(context.currentBlock(), postIterationStatementBlock);
+            if (bodyResult.asTerminationType() == SSAConstructionResult.TerminationType.NONE) {
+                // Body does not end in break or continue,
+                // which would have already generated a jump to the post iteration statement
+                generateJumpInstruction(context.currentBlock(), postIterationStatementBlock);
+            }
 
             Map<Symbol, SSAValue> bodyValues = context.getLatestSSAValues(bodyBlock);
 
             //Add post iteration statement block if post iteration statement is present
             context.newCurrentBlock(postIterationStatementBlock);
+            // We assume post iteration statement is an assignment => can not terminate
             loop.postIterationStatement().get().accept(this, context);
             generateJumpInstruction(context.currentBlock(), conditionEvaluationBlock);
 
@@ -308,7 +350,11 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
             phis = createPhis(conditionEvaluationBlock, updatedSSAValues, preLoopBlock, preLoopValues, context);
 
         } else {
-            generateJumpInstruction(context.currentBlock(), conditionEvaluationBlock);
+            if (bodyResult.asTerminationType() == SSAConstructionResult.TerminationType.NONE) {
+                // Body does not end in break or continue,
+                // which would have already generated a jump to the post iteration statement
+                generateJumpInstruction(context.currentBlock(), conditionEvaluationBlock);
+            }
 
             Map<Symbol, SSAValue> bodyValues = context.getLatestSSAValues(bodyBlock);
 
@@ -328,12 +374,10 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
             bodyBlock.insertInstruction(0, phi);
         }
 
-        context.exitLoop(loopContext);
-
         // Prepare the block for further instructions
         context.newCurrentBlock(loopExitBlock);
 
-        return SSAConstructionResult.empty();
+        return SSAConstructionResult.statement();
     }
 
     private Map<Symbol, SSAValue> updateSSAValuesIfPresent(
@@ -363,7 +407,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
 
         context.currentBlock().addInstruction(returnInstruction);
 
-        return SSAConstructionResult.empty();
+        return SSAConstructionResult.statement(SSAConstructionResult.TerminationType.STRONG);
     }
 
     @Override
@@ -384,7 +428,6 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
 
     @Override
     public SSAConstructionResult visit(TypedVariable variable, SsaConstructionContext context) {
-        // TODO: Solve declaration problem
         return SSAConstructionResult.ssaValue(context.getLatestSSAValue(variable.symbol()));
     }
 }

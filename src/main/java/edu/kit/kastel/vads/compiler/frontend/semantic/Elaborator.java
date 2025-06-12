@@ -418,7 +418,6 @@ public class Elaborator implements
 
     @Override
     public ElaborationResult visit(ForTree forTree, ElaborationContext context) {
-        context.incrementNestedLoopDepth();
 
         ElaborationResult initializerResult = null;
          if (forTree.initializationStatementTree() != null){
@@ -438,7 +437,9 @@ public class Elaborator implements
             }
         }
 
+        context.incrementNestedLoopDepth();
         ElaborationResult bodyElaborationResult = forTree.bodyStatementTree().accept(this, context);
+        context.decrementNestedLoopDepth();
 
         TypedLoop typedLoop = new TypedLoop(
                 conditionResult.expression(),
@@ -454,8 +455,6 @@ public class Elaborator implements
                 : List.of(typedLoop),
                 Optional.empty(),
                 forTree.span());
-
-        context.decrementNestedLoopDepth();
 
         return ElaborationResult.block(typedBlock);
     }
