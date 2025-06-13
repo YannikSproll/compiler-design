@@ -10,6 +10,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
     public IrFile generateIr(TypedFile typedFile) {
         SsaConstructionContext context = new SsaConstructionContext();
         SSAConstructionResult result = typedFile.accept(this, context);
+
         return result.asFile();
     }
 
@@ -159,6 +160,8 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
 
         IrFunction irFunction = new IrFunction(startBlock, context.blocks(), function.isMainFunction());
 
+        new IrPhiGenerator().addPhis(irFunction);
+
         return SSAConstructionResult.function(irFunction);
     }
 
@@ -166,12 +169,8 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
     public SSAConstructionResult visit(TypedIf ifStatement, SsaConstructionContext context) {
         SSAConstructionResult conditionResult = ifStatement.conditionExpression().accept(this, context);
 
-        IrBlock conditionBlock = context.currentBlock();
         IrBlock thenBlock = context.createBlock("if_then");
         IrBlock fBlock = context.createBlock("if_merge");
-
-        Map<Symbol, SSAValue> elseValues;
-        Map<Symbol, SSAValue> thenValues;
 
         if (ifStatement.elseStatement().isPresent()) {
             IrBlock elseBlock = context.createBlock("if_else");
@@ -186,8 +185,6 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
                 generateJumpInstruction(context.currentBlock(), fBlock);
             }
 
-            elseValues = context.getLatestSSAValues(context.currentBlock());
-
             context.newCurrentBlock(thenBlock);
             SSAConstructionResult thenResult = ifStatement.thenStatement().accept(this, context);
             if (thenResult.asTerminationType() == SSAConstructionResult.TerminationType.NONE) {
@@ -196,28 +193,18 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
                 generateJumpInstruction(context.currentBlock(), fBlock);
             }
 
-            thenValues = context.getLatestSSAValues(context.currentBlock());
-
             if (thenResult.asTerminationType() == SSAConstructionResult.TerminationType.STRONG
                 && elseResult.asTerminationType() == SSAConstructionResult.TerminationType.STRONG) {
                 // Both branches return
                 // No need for further phi nodes.
                 return SSAConstructionResult.statement(SSAConstructionResult.TerminationType.STRONG);
             }
-
-            List<IrPhi> phis = createPhis(elseBlock, elseValues, thenBlock, thenValues, context);
             context.newCurrentBlock(fBlock);
-            for (IrPhi phi : phis) {
-                context.currentBlock().addInstruction(phi);
-            }
-
             return SSAConstructionResult.statement(
                     elseResult.asTerminationType().merge(
                             thenResult.asTerminationType()));
         } else {
             generateBranchInstruction(conditionResult.asSSAValue(), context.currentBlock(), thenBlock, fBlock);
-
-            elseValues = context.getLatestSSAValues(context.currentBlock());
 
             context.newCurrentBlock(thenBlock);
             SSAConstructionResult thenResult = ifStatement.thenStatement().accept(this, context);
@@ -225,15 +212,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
             if (thenResult.asTerminationType() == SSAConstructionResult.TerminationType.NONE) {
                 generateJumpInstruction(context.currentBlock(), fBlock);
             }
-
-            thenValues = context.getLatestSSAValues(context.currentBlock());
-
-            List<IrPhi> phis = createPhis(conditionBlock, elseValues, thenBlock, thenValues, context);
             context.newCurrentBlock(fBlock);
-            for (IrPhi phi : phis) {
-                context.currentBlock().addInstruction(phi);
-            }
-
             return SSAConstructionResult.statement(SSAConstructionResult.TerminationType.NONE);
         }
     }
@@ -298,9 +277,6 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
 
         generateBranchInstruction(headerConditionResult.asSSAValue(), context.currentBlock(), bodyBlock, loopExitBlock);
 
-        IrBlock preLoopBlock = context.currentBlock();
-        Map<Symbol, SSAValue> preLoopValues = context.getLatestSSAValues(preLoopBlock);
-
         LoopContext loopContext = new LoopContext(
                 loop.postIterationStatement().isPresent() ? postIterationStatementBlock : conditionEvaluationBlock,
                 loopExitBlock);
@@ -321,8 +297,6 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
             return SSAConstructionResult.statement(SSAConstructionResult.TerminationType.NONE);
         }
 
-        List<IrPhi> phis;
-
         if (loop.postIterationStatement().isPresent()) {
             if (bodyResult.asTerminationType() == SSAConstructionResult.TerminationType.NONE) {
                 // Body does not end in break or continue,
@@ -330,21 +304,11 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
                 generateJumpInstruction(context.currentBlock(), postIterationStatementBlock);
             }
 
-            Map<Symbol, SSAValue> bodyValues = context.getLatestSSAValues(bodyBlock);
-
             //Add post iteration statement block if post iteration statement is present
             context.newCurrentBlock(postIterationStatementBlock);
             // We assume post iteration statement is an assignment => can not terminate
             loop.postIterationStatement().get().accept(this, context);
             generateJumpInstruction(context.currentBlock(), conditionEvaluationBlock);
-
-            Map<Symbol, SSAValue> postIterationValues = context.getLatestSSAValues(postIterationStatementBlock);
-
-            Map<Symbol, SSAValue> updatedSSAValues = updateSSAValuesIfPresent(
-                    bodyValues,
-                    postIterationValues);
-
-            phis = createPhis(conditionEvaluationBlock, updatedSSAValues, preLoopBlock, preLoopValues, context);
 
         } else {
             if (bodyResult.asTerminationType() == SSAConstructionResult.TerminationType.NONE) {
@@ -352,29 +316,12 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
                 // which would have already generated a jump to the post iteration statement
                 generateJumpInstruction(context.currentBlock(), conditionEvaluationBlock);
             }
-
-            Map<Symbol, SSAValue> bodyValues = context.getLatestSSAValues(bodyBlock);
-
-            phis = createPhis(
-                    conditionEvaluationBlock, bodyValues,
-                    preLoopBlock, preLoopValues,
-                    context);
         }
 
         // Generate the condition evaluation block
         context.newCurrentBlock(conditionEvaluationBlock);
         SSAConstructionResult bottomConstructionResult = loop.conditionExpression().accept(this, context);
         generateBranchInstruction(bottomConstructionResult.asSSAValue(), context.currentBlock(), bodyBlock, loopExitBlock);
-
-        for (IrPhi phi : phis.reversed()) {
-            HashSet<IrBlock> processedBlocks = new HashSet<>();
-
-            HashSet<SSAValue> valuesToReplace = new HashSet<>(phi.sources().stream().map(IrPhi.IrPhiItem::value).toList());
-            replaceInBlock(bodyBlock, processedBlocks, phi.target(), valuesToReplace);
-
-            // Insert phis to the begin of the body block
-            bodyBlock.insertInstruction(0, phi);
-        }
 
         // Prepare the block for further instructions
         context.newCurrentBlock(loopExitBlock);
@@ -420,16 +367,12 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
                     irBranchInstruction.replaceConditionValue(newValue);
                 }
                 break;
-            case IrJumpInstruction irJumpInstruction:
+            case IrJumpInstruction _, IrIntConstantInstruction _, IrBoolConstantInstruction _:
                 break;
             case IrReturnInstruction irReturnInstruction:
                 if (valuesToReplace.contains(irReturnInstruction.src())) {
                     irReturnInstruction.replaceSrc(newValue);
                 }
-                break;
-            case IrBoolConstantInstruction irBoolConstantInstruction:
-                break;
-            case IrIntConstantInstruction irIntConstantInstruction:
                 break;
             case IrMoveInstruction irMoveInstruction:
                 if (valuesToReplace.contains(irMoveInstruction.source())) {

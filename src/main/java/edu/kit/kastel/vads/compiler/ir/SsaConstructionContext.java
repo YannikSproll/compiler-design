@@ -6,9 +6,8 @@ import java.util.*;
 
 public class SsaConstructionContext {
     private IrBlock currentBlock;
-    private List<IrBlock> blocks;
-    private SSAVariableRenameRecording globalVariableNameRecording;
-    private Map<IrBlock, SSAVariableRenameRecording> recordingsByBlocks;
+    private final List<IrBlock> blocks;
+    private final SSAVariableRenameRecording globalVariableNameRecording;
     private Stack<LoopContext> loopContexts = new Stack<>();
     private String functionName;
     private int blockCounter = 0;
@@ -20,7 +19,6 @@ public class SsaConstructionContext {
         this.globalVariableNameRecording = new SSAVariableRenameRecording();
         this.loopContexts = new Stack<>();
         this.functionName = null;
-        this.recordingsByBlocks = new HashMap<>();
     }
 
     public IrBlock beginFunction(String name) {
@@ -30,7 +28,6 @@ public class SsaConstructionContext {
         newCurrentBlock(startBlock);
         ssaValueNameCounter = 0;
         globalVariableNameRecording.clear();
-        recordingsByBlocks.clear();
         return startBlock;
     }
 
@@ -44,12 +41,6 @@ public class SsaConstructionContext {
 
     private String getBlockName(String role) {
         return functionName + "_" + role + "_" + blockCounter++;
-    }
-
-    public IrBlock newCurrentBlock(String role) {
-        currentBlock = createBlock(role);
-        blocks.add(currentBlock);
-        return currentBlock;
     }
 
     public void newCurrentBlock(IrBlock block) {
@@ -67,22 +58,12 @@ public class SsaConstructionContext {
 
     public void introduceNewSSAValue(Symbol symbol, SSAValue ssaValue) {
         globalVariableNameRecording.introduceNewSSAValue(symbol, ssaValue);
-
-        recordingsByBlocks.computeIfAbsent(currentBlock, k -> new SSAVariableRenameRecording())
-                .introduceNewSSAValue(symbol, ssaValue);
     }
 
     public SSAValue getLatestSSAValue(Symbol symbol) {
         return globalVariableNameRecording.getLatestSSAValue(symbol);
     }
 
-    public Map<Symbol, SSAValue> getLatestSSAValues(IrBlock block) {
-        if (!recordingsByBlocks.containsKey(block)) {
-            return Collections.emptyMap();
-        }
-
-        return recordingsByBlocks.get(block).getLatestSSAValues();
-    }
 
     public void enterLoop(LoopContext loopContext) {
         loopContexts.push(loopContext);
