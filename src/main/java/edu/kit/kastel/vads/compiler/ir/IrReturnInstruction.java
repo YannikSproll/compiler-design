@@ -1,5 +1,14 @@
 package edu.kit.kastel.vads.compiler.ir;
 
-public record IrReturnInstruction(
-        SSAValue src) implements IrInstruction {
+public final class IrReturnInstruction implements IrInstruction {
+    private SSAValue src;
+
+    public IrReturnInstruction(SSAValue src) {
+        this.src = src;
+    }
+
+    public SSAValue src() { return src; }
+    public void replaceSrc(SSAValue newSrc) {
+        this.src = newSrc;
+    }
 }

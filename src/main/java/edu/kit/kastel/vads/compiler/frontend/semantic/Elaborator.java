@@ -475,7 +475,7 @@ public class Elaborator implements
 
         TypedIf typedIf = new TypedIf(
                 conditionResult.expression(),
-                thenResult.block(),
+                thenResult.statementOrBlock(),
                 elseResult,
                 ifTree.span());
 

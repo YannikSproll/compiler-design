@@ -42,6 +42,8 @@ public class InstructionSelector {
 
             deSSA(function);
 
+            new IrFunctionPrinter().print(function);
+
             LivenessAnalysisResult livenessAnalysisResult = livenessAnalysis.run(function);
 
             RegisterAllocationResult allocationResult = allocator.allocateRegisters(function, livenessAnalysisResult);
@@ -131,6 +133,7 @@ public class InstructionSelector {
         }
     }
 
+    // TODO: Check that shifts use the %cl register
     private void generateInstruction(IrInstruction instruction, CodeGenerator codeGenerator, CodeGenerationContext codeGenerationContext) {
         switch (instruction) {
             case IrJumpInstruction jump:

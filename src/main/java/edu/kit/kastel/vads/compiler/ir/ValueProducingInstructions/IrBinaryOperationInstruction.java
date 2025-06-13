@@ -7,4 +7,7 @@ public sealed interface IrBinaryOperationInstruction extends IrValueProducingIns
 {
     SSAValue leftSrc();
     SSAValue rightSrc();
+
+    void replaceLeftSrc(SSAValue newLeftSrc);
+    void replaceRightSrc(SSAValue newRightSrc);
 }

@@ -12,7 +12,7 @@ public sealed interface ElaborationResult permits ElaborationResult.BlockElabora
     default String name() { throw new IllegalStateException(); }
     default TypedBlock block() { throw new IllegalStateException(); }
     default TypedLValue lvalue() { throw new IllegalStateException(); }
-
+    default TypedStatement statementOrBlock() { throw new IllegalStateException(); }
 
     static ElaborationResult expression(TypedExpression expression) {
         return new ExpressionElaborationResult(expression);
@@ -24,10 +24,6 @@ public sealed interface ElaborationResult permits ElaborationResult.BlockElabora
 
     static ElaborationResult statements(List<TypedStatement> statements) {
         return new StatementSequenceElaborationResult(statements);
-    }
-
-    static ElaborationResult nodes(List<TypedNode> node) {
-        return new NodeElaborationResult(node);
     }
 
     static ElaborationResult node(TypedNode node) {
@@ -69,6 +65,9 @@ public sealed interface ElaborationResult permits ElaborationResult.BlockElabora
         public List<TypedStatement> statements() {
             return List.of(statement);
         }
+
+        @Override
+        public TypedStatement statementOrBlock() { return statement; }
     }
 
     record StatementSequenceElaborationResult(List<TypedStatement> statements) implements ElaborationResult {
@@ -114,6 +113,9 @@ public sealed interface ElaborationResult permits ElaborationResult.BlockElabora
         public List<TypedStatement> statements() {
             return List.of(block);
         }
+
+        @Override
+        public TypedStatement statementOrBlock() { return block; }
     }
 
     record LValueElaborationResult(TypedLValue lvalue) implements ElaborationResult {

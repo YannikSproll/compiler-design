@@ -3,10 +3,7 @@ package edu.kit.kastel.vads.compiler.ir;
 import edu.kit.kastel.vads.compiler.frontend.semantic.hir.*;
 import edu.kit.kastel.vads.compiler.ir.ValueProducingInstructions.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class SsaConstruction implements TypedResultVisitor<SsaConstructionContext, SSAConstructionResult> {
 
@@ -237,7 +234,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
                 context.currentBlock().addInstruction(phi);
             }
 
-            return SSAConstructionResult.statement(thenResult.asTerminationType());
+            return SSAConstructionResult.statement(SSAConstructionResult.TerminationType.NONE);
         }
     }
 
@@ -359,7 +356,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
             Map<Symbol, SSAValue> bodyValues = context.getLatestSSAValues(bodyBlock);
 
             phis = createPhis(
-                    bodyBlock, bodyValues,
+                    conditionEvaluationBlock, bodyValues,
                     preLoopBlock, preLoopValues,
                     context);
         }
@@ -370,6 +367,11 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
         generateBranchInstruction(bottomConstructionResult.asSSAValue(), context.currentBlock(), bodyBlock, loopExitBlock);
 
         for (IrPhi phi : phis.reversed()) {
+            HashSet<IrBlock> processedBlocks = new HashSet<>();
+
+            HashSet<SSAValue> valuesToReplace = new HashSet<>(phi.sources().stream().map(IrPhi.IrPhiItem::value).toList());
+            replaceInBlock(bodyBlock, processedBlocks, phi.target(), valuesToReplace);
+
             // Insert phis to the begin of the body block
             bodyBlock.insertInstruction(0, phi);
         }
@@ -378,6 +380,92 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
         context.newCurrentBlock(loopExitBlock);
 
         return SSAConstructionResult.statement();
+    }
+
+    private void replaceInBlock(IrBlock block, Set<IrBlock> processedBlocks, SSAValue newValue, Set<SSAValue> valuesToReplace) {
+        if (!processedBlocks.add(block) || valuesToReplace.isEmpty()) {
+            return;
+        }
+
+        for (IrInstruction instruction : block.getInstructions()) {
+            replaceOperands(instruction, newValue, valuesToReplace);
+
+            Optional<SSAValue> definedByInstruction = definesOperands(instruction, valuesToReplace);
+            if (definedByInstruction.isPresent()) {
+                valuesToReplace.remove(definedByInstruction.get());
+                if (valuesToReplace.isEmpty()) {
+                    return;
+                }
+            }
+        }
+
+        for (IrBlock successor : block.getSuccessorBlocks()) {
+            HashSet<SSAValue> succValuesToReplace = new HashSet<>(valuesToReplace);
+            replaceInBlock(successor, processedBlocks, newValue, succValuesToReplace);
+        }
+    }
+
+    private void replaceOperands(IrInstruction instruction, SSAValue newValue, Set<SSAValue> valuesToReplace) {
+        switch (instruction) {
+            case IrBinaryOperationInstruction binaryOperationInstruction:
+                if (valuesToReplace.contains(binaryOperationInstruction.leftSrc())) {
+                    binaryOperationInstruction.replaceLeftSrc(newValue);
+                }
+                if (valuesToReplace.contains(binaryOperationInstruction.rightSrc())) {
+                    binaryOperationInstruction.replaceRightSrc(newValue);
+                }
+                break;
+            case IrBranchInstruction irBranchInstruction:
+                if (valuesToReplace.contains(irBranchInstruction.conditionValue())) {
+                    irBranchInstruction.replaceConditionValue(newValue);
+                }
+                break;
+            case IrJumpInstruction irJumpInstruction:
+                break;
+            case IrReturnInstruction irReturnInstruction:
+                if (valuesToReplace.contains(irReturnInstruction.src())) {
+                    irReturnInstruction.replaceSrc(newValue);
+                }
+                break;
+            case IrBoolConstantInstruction irBoolConstantInstruction:
+                break;
+            case IrIntConstantInstruction irIntConstantInstruction:
+                break;
+            case IrMoveInstruction irMoveInstruction:
+                if (valuesToReplace.contains(irMoveInstruction.source())) {
+                    irMoveInstruction.replaceSource(newValue);
+                }
+                break;
+            case IrPhi irPhi:
+                break;
+            case IrUnaryOperationInstruction irUnaryOperationInstruction:
+                if (valuesToReplace.contains(irUnaryOperationInstruction.src())) {
+                    irUnaryOperationInstruction.replaceSrc(newValue);
+                }
+                break;
+        }
+    }
+
+    private Optional<SSAValue> definesOperands(IrInstruction instruction, Set<SSAValue> valuesToReplace) {
+        return switch (instruction) {
+            case IrBinaryOperationInstruction binaryOperationInstruction ->
+                    valuesToReplace.contains(binaryOperationInstruction.target())
+                            ? Optional.of(binaryOperationInstruction.target()) : Optional.empty();
+            case IrBoolConstantInstruction irBoolConstantInstruction ->
+                    valuesToReplace.contains(irBoolConstantInstruction.target())
+                            ? Optional.of(irBoolConstantInstruction.target()) : Optional.empty();
+            case IrIntConstantInstruction irIntConstantInstruction ->
+                    valuesToReplace.contains(irIntConstantInstruction.target()) ?
+                            Optional.of(irIntConstantInstruction.target()) : Optional.empty();
+            case IrMoveInstruction irMoveInstruction -> valuesToReplace.contains(irMoveInstruction.target())
+                    ? Optional.of(irMoveInstruction.target()) : Optional.empty();
+            case IrPhi irPhi -> valuesToReplace.contains(irPhi.target())
+                    ? Optional.of(irPhi.target()) : Optional.empty();
+            case IrUnaryOperationInstruction irUnaryOperationInstruction ->
+                    valuesToReplace.contains(irUnaryOperationInstruction.target())
+                            ? Optional.of(irUnaryOperationInstruction.target()) : Optional.empty();
+            case IrBranchInstruction _, IrJumpInstruction _, IrReturnInstruction _ -> Optional.empty();
+        };
     }
 
     private Map<Symbol, SSAValue> updateSSAValuesIfPresent(
