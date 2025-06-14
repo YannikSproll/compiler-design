@@ -66,7 +66,8 @@ class ReturnAnalysis implements TypedVisitor<ReturnAnalysis.ReturnState> {
     @Override
     public void visit(TypedIf ifStatement, ReturnState returnState) {
         boolean doesReturn = returnState.doesTreeReturn(ifStatement.thenStatement())
-                && (ifStatement.elseStatement().isEmpty() || returnState.doesTreeReturn(ifStatement.elseStatement().get()));
+                && ifStatement.elseStatement().isPresent()
+                && returnState.doesTreeReturn(ifStatement.elseStatement().get());
         returnState.putTreeReturn(ifStatement, doesReturn);
     }
 
