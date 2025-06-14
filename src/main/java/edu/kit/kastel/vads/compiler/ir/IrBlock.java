@@ -60,4 +60,7 @@ public final class IrBlock {
     public void removePhis() {
         instructions.removeIf(irInstruction -> irInstruction instanceof IrPhi);
     }
+    public void removeInstruction(IrInstruction instruction) {
+        instructions.remove(instruction);
+    }
 }

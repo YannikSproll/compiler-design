@@ -20,10 +20,11 @@ public class IrPhiGenerator {
 
 
         insertPlaceholderPhis(function, ssaVariables, dominanceFrontiers, ssaValueGenerator);
-        /*insertPhiOperands(function.startBlock(), ssaVariables);*/
+        insertPhiOperands(function.startBlock(), ssaVariables);
+        removeInvalidPhis(function);
         // Insert phis
-        /*HashSet<IrBlock> blocks = new HashSet<>();
-        replaceOperandsWithPhiTargets(function.startBlock(), blocks);*/
+        HashSet<IrBlock> blocks = new HashSet<>();
+        replaceOperandsWithPhiTargets(function.startBlock(), blocks);
 
         return function;
     }
@@ -35,13 +36,50 @@ public class IrPhiGenerator {
             Map<IrBlock, Set<IrBlock>> dominanceFrontiers,
             SSAValueGenerator ssaValueGenerator) {
 
-
         Map<Symbol, List<IrBlock>> defSites = new HashMap<>();
         HashSet<IrBlock> visitedBlock = new HashSet<>();
-
         computeDefSites(function.startBlock(), visitedBlock, defSites, ssaVariables);
 
-        for (Map.Entry<Symbol, List<IrBlock>> defSite : defSites.entrySet()) {
+        Map<Symbol, Set<IrBlock>> phiLocations = new HashMap<>();
+        Map<Symbol, Queue<IrBlock>> workLists = new HashMap<>();
+        Map<Symbol, Set<IrBlock>> hasAlready = new HashMap<>();
+
+        for (Symbol symbol : defSites.keySet()) {
+            phiLocations.put(symbol, new HashSet<>());
+            workLists.put(symbol, new ArrayDeque<>());
+            hasAlready.put(symbol, new HashSet<>());
+
+            for (IrBlock block : defSites.get(symbol)) {
+                workLists.get(symbol).add(block);
+                hasAlready.get(symbol).add(block);
+            }
+        }
+
+        for (Symbol symbol : defSites.keySet()) {
+            Queue<IrBlock> symbolWorkList = workLists.get(symbol);
+            while (!symbolWorkList.isEmpty()) {
+                IrBlock current = symbolWorkList.poll();
+                for (IrBlock frontier : dominanceFrontiers.getOrDefault(current, Set.of())) {
+
+                    if (!hasAlready.get(symbol).contains(frontier)) {
+                        phiLocations.get(symbol).add(frontier);
+                        symbolWorkList.add(frontier);
+                        hasAlready.get(symbol).add(frontier);
+                    }
+                }
+            }
+        }
+        int x = 0;
+
+        for (Symbol symbol :phiLocations.keySet()) {
+            Set<IrBlock> blocksToInsertPhis = phiLocations.get(symbol);
+            for (IrBlock block : blocksToInsertPhis) {
+                IrPhi phi = new IrPhi(ssaValueGenerator.generateNewSSAValue(), new ArrayList<>());
+                ssaVariables.introduceNewSSAValue(symbol, phi.target());
+                block.insertInstruction(0, phi);
+            }
+        }
+        /*for (Map.Entry<Symbol, List<IrBlock>> defSite : defSites.entrySet()) {
             List<IrBlock> workList = new ArrayList<>(defSite.getValue());
             HashSet<IrBlock> hasAlready = new HashSet<>();
             while (!workList.isEmpty()) {
@@ -64,7 +102,7 @@ public class IrPhiGenerator {
                     }
                 }
             }
-        }
+        }*/
     }
 
     private void computeDefSites(
@@ -270,6 +308,30 @@ public class IrPhiGenerator {
         };
     }
 
+    private void removeInvalidPhis(IrFunction function) {
+        HashSet<IrBlock> visitedBlocks = new HashSet<>();
+        removeInvalidPhis(function.startBlock(), visitedBlocks);
+    }
+
+    private void removeInvalidPhis(IrBlock block, HashSet<IrBlock> visitedBlocks) {
+        if (!visitedBlocks.add(block)) {
+            return;
+        }
+
+        Set<IrPhi> phisToRemove = new HashSet<>();
+        for (IrInstruction instruction : block.getInstructions()) {
+            if (instruction instanceof IrPhi phi) {
+                if (phi.sources().stream().map(IrPhi.IrPhiItem::value).distinct().count() < 2) {
+                    phisToRemove.add(phi);
+                }
+            }
+        }
+        phisToRemove.forEach(block::removeInstruction);
+
+        for (IrBlock successor : block.getSuccessorBlocks()) {
+            removeInvalidPhis(successor, visitedBlocks);
+        }
+    }
 
     private HashMap<IrBlock, Set<IrBlock>> buildDominatorTree(IrFunction function) {
         HashMap<IrBlock, Set<IrBlock>> dominators = initDominatorTree(function);
@@ -399,6 +461,37 @@ public class IrPhiGenerator {
         for (IrBlock block : allBlocks) {
             dominanceFrontiers.put(block, new HashSet<>());
         }
+        /*
+        for (IrBlock block : allBlocks) {
+            for (IrBlock predecessor : block.getPredecessorBlocks()) {
+                if (immDominators.get(block) != predecessor) {
+                    dominanceFrontiers.get(block).add(predecessor);
+                }
+            }
+        }
+
+        List<IrBlock> blocks = getPostOrderDominatorTreeTraversal(allBlocks, dominatorTree, immDominators);
+        for (IrBlock block : blocks) {
+            for (IrBlock c : dominatorTree.getOrDefault(block, Set.of())) {
+                for (IrBlock w : dominanceFrontiers.get(c)) {
+                    if (immDominators.get(w) != block) {
+                        dominanceFrontiers.get(block).add(w);
+                    }
+                }
+            }
+        }*/
+
+        int x = 5;
+        /*for (IrBlock block : allBlocks) {
+            for (IrBlock predecessor : block.getPredecessorBlocks()) {
+                IrBlock runner = predecessor;
+
+                while (runner != block && runner != immDominators.get(block)) {
+                    dominanceFrontiers.get(runner).add(block);
+                    runner = immDominators.get(runner);
+                }
+            }
+        }*/
 
         // Step 1: Determine the processing order (post-order traversal of the dominator tree).
         // This ensures that when we process a node 'n', the DF of its dominator tree children
