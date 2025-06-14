@@ -6,17 +6,29 @@ import java.util.*;
 
 public final class SSAVariableRenameRecording {
     private final Map<Symbol, List<SSAValue>> ssaValueMappings;
+    private final Map<SSAValue, Symbol> invertedMappings;
 
     public SSAVariableRenameRecording() {
         this.ssaValueMappings = new HashMap<>();
+        this.invertedMappings = new HashMap<>();
     }
 
     private SSAVariableRenameRecording(Map<Symbol, List<SSAValue>> ssaValueMappings) {
         this.ssaValueMappings = ssaValueMappings;
+
+        Map<SSAValue, Symbol> invertedMappings = new HashMap<>();
+        for (Map.Entry<Symbol, List<SSAValue>> mapping : ssaValueMappings.entrySet()) {
+            for (SSAValue value : mapping.getValue()) {
+                invertedMappings.put(value, mapping.getKey());
+            }
+        }
+
+        this.invertedMappings = invertedMappings;
     }
 
     public void introduceNewSSAValue(Symbol symbol, SSAValue ssaValue) {
-        ssaValueMappings.computeIfAbsent(symbol, s -> new ArrayList<>()).add(ssaValue);
+        ssaValueMappings.computeIfAbsent(symbol, _ -> new ArrayList<>()).add(ssaValue);
+        invertedMappings.computeIfAbsent(ssaValue, _ -> symbol);
     }
 
     public SSAValue getLatestSSAValue(Symbol symbol) {
@@ -42,6 +54,8 @@ public final class SSAVariableRenameRecording {
     public Map<Symbol, List<SSAValue>> getSSAValueMappings() {
         return Collections.unmodifiableMap(ssaValueMappings);
     }
+
+    public Map<SSAValue, Symbol> getInvertedSSAValueMappings() { return Collections.unmodifiableMap(invertedMappings); }
 
     public SSAVariableRenameRecording copy() {
         Map<Symbol, List<SSAValue>> newMappings = new HashMap<>();

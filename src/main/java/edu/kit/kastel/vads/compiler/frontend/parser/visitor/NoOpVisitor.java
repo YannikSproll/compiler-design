@@ -1,7 +1,6 @@
 package edu.kit.kastel.vads.compiler.frontend.parser.visitor;
 
 import edu.kit.kastel.vads.compiler.frontend.parser.ast.*;
-import edu.kit.kastel.vads.compiler.frontend.semantic.Namespace;
 
 /// A visitor that does nothing and returns [Unit#INSTANCE] by default.
 /// This can be used to implement operations only for specific tree types.

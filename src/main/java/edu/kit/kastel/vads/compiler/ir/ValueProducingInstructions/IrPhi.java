@@ -11,4 +11,8 @@ public record IrPhi(
 
     public record IrPhiItem(SSAValue value, IrBlock block) {
     }
+
+    public void addPhiItem(IrPhiItem item) {
+        sources.add(item);
+    }
 }

@@ -11,13 +11,15 @@ public class SsaConstructionContext {
     private Stack<LoopContext> loopContexts = new Stack<>();
     private String functionName;
     private int blockCounter = 0;
-    private int ssaValueNameCounter = 0;
+    private final SSAValueGenerator ssaValueGenerator;
+
 
     public SsaConstructionContext() {
         this.currentBlock = null;
         this.blocks = new ArrayList<>();
         this.globalVariableNameRecording = new SSAVariableRenameRecording();
         this.loopContexts = new Stack<>();
+        this.ssaValueGenerator = new SSAValueGenerator();
         this.functionName = null;
     }
 
@@ -26,7 +28,7 @@ public class SsaConstructionContext {
         blockCounter = 0;
         IrBlock startBlock = createBlock("start");
         newCurrentBlock(startBlock);
-        ssaValueNameCounter = 0;
+        ssaValueGenerator.reset();
         globalVariableNameRecording.clear();
         return startBlock;
     }
@@ -53,7 +55,11 @@ public class SsaConstructionContext {
     }
 
     public SSAValue generateNewSSAValue() {
-        return new SSAValue("%" + ssaValueNameCounter++);
+        return ssaValueGenerator.generateNewSSAValue();
+    }
+
+    public SSAValueGenerator ssaValueGenerator() {
+        return ssaValueGenerator;
     }
 
     public void introduceNewSSAValue(Symbol symbol, SSAValue ssaValue) {
@@ -63,7 +69,9 @@ public class SsaConstructionContext {
     public SSAValue getLatestSSAValue(Symbol symbol) {
         return globalVariableNameRecording.getLatestSSAValue(symbol);
     }
-
+    public SSAVariableRenameRecording getSSAVariables() {
+        return globalVariableNameRecording.copy();
+    }
 
     public void enterLoop(LoopContext loopContext) {
         loopContexts.push(loopContext);
