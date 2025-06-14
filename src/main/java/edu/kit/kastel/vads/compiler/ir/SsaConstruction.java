@@ -84,6 +84,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
     @Override
     public SSAConstructionResult visit(TypedBreak breakStatement, SsaConstructionContext context) {
         generateJumpInstruction(context.currentBlock(), context.getLoopContext().exitLoopBlock());
+        context.getLoopContext().requireBreak();
         return SSAConstructionResult.statement(SSAConstructionResult.TerminationType.WEAK);
     }
 
@@ -121,6 +122,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
     @Override
     public SSAConstructionResult visit(TypedContinue continueStatement, SsaConstructionContext context) {
         generateJumpInstruction(context.currentBlock(), context.getLoopContext().reevaluateConditionBlock());
+        context.getLoopContext().requireContinue();
         return SSAConstructionResult.statement(SSAConstructionResult.TerminationType.WEAK);
     }
 
@@ -231,30 +233,6 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
         from.addSuccessorBlock(falseBranch);
     }
 
-    private static List<IrPhi> createPhis(
-            IrBlock firstBlock, Map<Symbol, SSAValue> firstBlockReassignments,
-            IrBlock secondBlock, Map<Symbol, SSAValue> secondBlockReassignments,
-            SsaConstructionContext context) {
-        ArrayList<IrPhi> phis = new ArrayList<>();
-
-        for (Map.Entry<Symbol, SSAValue> entry : firstBlockReassignments.entrySet()) {
-            Symbol currentSymbol = entry.getKey();
-            if (secondBlockReassignments.containsKey(currentSymbol)) {
-                SSAValue phiTargetValue = context.generateNewSSAValue();
-                context.introduceNewSSAValue(currentSymbol, phiTargetValue);
-
-                IrPhi phi = new IrPhi(
-                        phiTargetValue,
-                        List.of(
-                                new IrPhi.IrPhiItem(firstBlockReassignments.get(currentSymbol), firstBlock),
-                                new IrPhi.IrPhiItem(secondBlockReassignments.get(currentSymbol), secondBlock)
-                        ));
-                phis.add(phi);
-            }
-        }
-
-        return phis;
-    }
 
     @Override
     public SSAConstructionResult visit(TypedIntLiteral literal, SsaConstructionContext context) {
@@ -289,7 +267,9 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
 
         context.exitLoop(loopContext);
 
-        if (bodyResult.asTerminationType() == SSAConstructionResult.TerminationType.STRONG) {
+        if (bodyResult.asTerminationType() == SSAConstructionResult.TerminationType.STRONG
+            && !loopContext.hasBreak()
+            && !loopContext.hasContinue()) {
             // Body ends in a return statements on all paths
             // => Post condition and branch are dead code
 
@@ -330,26 +310,6 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
         return SSAConstructionResult.statement();
     }
 
-
-    private Map<Symbol, SSAValue> updateSSAValuesIfPresent(
-            Map<Symbol, SSAValue> baseValues,
-            Map<Symbol, SSAValue> potentialNewerValues) {
-        Map<Symbol, SSAValue> updatedValues = new HashMap<>();
-
-        // Update reassignments in baseValues
-        for (Map.Entry<Symbol, SSAValue> entry : baseValues.entrySet()) {
-            updatedValues.put(entry.getKey(), potentialNewerValues.getOrDefault(entry.getKey(), entry.getValue()));
-        }
-
-        // Add remaining values of potential updates
-        for (Map.Entry<Symbol, SSAValue> entry : potentialNewerValues.entrySet()) {
-            if (!updatedValues.containsKey(entry.getKey())) {
-                updatedValues.put(entry.getKey(), entry.getValue());
-            }
-        }
-
-        return updatedValues;
-    }
 
     @Override
     public SSAConstructionResult visit(TypedReturn returnStatement, SsaConstructionContext context) {

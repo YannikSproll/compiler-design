@@ -15,8 +15,14 @@ public class IrPhiGenerator {
 
         HashMap<IrBlock, Set<IrBlock>> dominators = buildDominatorTree(function);
         HashMap<IrBlock, IrBlock> immDominators = getImmediateDominators(dominators);
-        Map<IrBlock, Set<IrBlock>> dominanceChildren = getDominanceTree(dominators.keySet(), immDominators);
-        Map<IrBlock, Set<IrBlock>> dominanceFrontiers = getDominanceFrontiers(function, dominators.keySet(), dominanceChildren, immDominators);
+        Map<IrBlock, Set<IrBlock>> dominanceChildren = getDominanceTree(
+                new HashSet<>(function.blocks()),
+                immDominators);
+        Map<IrBlock, Set<IrBlock>> dominanceFrontiers = getDominanceFrontiers(
+                function,
+                new HashSet<>(function.blocks()),
+                dominanceChildren,
+                immDominators);
 
 
         insertPlaceholderPhis(function, ssaVariables, dominanceFrontiers, ssaValueGenerator);
@@ -504,7 +510,7 @@ public class IrPhiGenerator {
             // Rule 1: Add nodes to DF(n) based on CFG edges.
             // These are successors 'y' of 'n' where 'n's dominance "breaks out".
             for (IrBlock y : n.getSuccessorBlocks()) {
-                if (!immDominators.get(y).equals(n)) { // If 'n' is NOT the immediate dominator of 'y'
+                if (!immDominators.containsKey(y) || !immDominators.get(y).equals(n)) { // If 'n' is NOT the immediate dominator of 'y'
                     dominanceFrontiers.get(n).add(y);
                 }
             }
