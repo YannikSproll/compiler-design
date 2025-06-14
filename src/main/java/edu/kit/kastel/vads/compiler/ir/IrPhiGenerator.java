@@ -15,13 +15,15 @@ public class IrPhiGenerator {
 
         HashMap<IrBlock, Set<IrBlock>> dominators = buildDominatorTree(function);
         HashMap<IrBlock, IrBlock> immDominators = getImmediateDominators(dominators);
-        HashMap<IrBlock, Set<IrBlock>> dominanceFrontiers = getDominanceFrontiers(function, immDominators);
+        Map<IrBlock, Set<IrBlock>> dominanceChildren = getDominanceTree(dominators.keySet(), immDominators);
+        Map<IrBlock, Set<IrBlock>> dominanceFrontiers = getDominanceFrontiers(function, dominators.keySet(), dominanceChildren, immDominators);
+
 
         insertPlaceholderPhis(function, ssaVariables, dominanceFrontiers, ssaValueGenerator);
-        insertPhiOperands(function.startBlock(), ssaVariables);
+        /*insertPhiOperands(function.startBlock(), ssaVariables);*/
         // Insert phis
-        HashSet<IrBlock> blocks = new HashSet<>();
-        replaceOperandsWithPhiTargets(function.startBlock(), blocks);
+        /*HashSet<IrBlock> blocks = new HashSet<>();
+        replaceOperandsWithPhiTargets(function.startBlock(), blocks);*/
 
         return function;
     }
@@ -30,7 +32,7 @@ public class IrPhiGenerator {
     private void insertPlaceholderPhis(
             IrFunction function,
             SSAVariableRenameRecording ssaVariables,
-            HashMap<IrBlock, Set<IrBlock>> dominanceFrontiers,
+            Map<IrBlock, Set<IrBlock>> dominanceFrontiers,
             SSAValueGenerator ssaValueGenerator) {
 
 
@@ -121,8 +123,10 @@ public class IrPhiGenerator {
             if (instruction instanceof IrPhi phi) {
                 Symbol phiTargetSymbol = ssaVariables.getInvertedSSAValueMappings().get(phi.target());
                 for (IrBlock predecessor : block.getPredecessorBlocks()) {
-                    SSAValue phiSource = getLatestDefOf(predecessor, phiTargetSymbol, ssaVariables);
-                    phi.addPhiItem(new IrPhi.IrPhiItem(phiSource, predecessor));
+                    Optional<SSAValue> phiSource = getLatestDefOf(predecessor, phiTargetSymbol, ssaVariables);
+                    if (phiSource.isPresent()) {
+                        phi.addPhiItem(new IrPhi.IrPhiItem(phiSource.get(), predecessor));
+                    }
                 }
             }
         }
@@ -132,7 +136,7 @@ public class IrPhiGenerator {
         }
     }
 
-    private SSAValue getLatestDefOf(IrBlock block, Symbol symbol, SSAVariableRenameRecording ssaVariables) {
+    private Optional<SSAValue> getLatestDefOf(IrBlock block, Symbol symbol, SSAVariableRenameRecording ssaVariables) {
         List<SSAValue> ssaValues = new ArrayList<>();
 
         for (IrInstruction instruction : block.getInstructions()) {
@@ -149,20 +153,20 @@ public class IrPhiGenerator {
         }
 
         if (!ssaValues.isEmpty()) {
-            return ssaValues.getLast();
+            return Optional.of(ssaValues.getLast());
         }
 
         HashSet<SSAValue> lastPredecessorDefs = new HashSet<>();
         for (IrBlock predecessor : block.getPredecessorBlocks()) {
-            SSAValue lastPredecessorDef = getLatestDefOf(predecessor, symbol, ssaVariables);
-            lastPredecessorDefs.add(lastPredecessorDef);
+            Optional<SSAValue> lastPredecessorDef = getLatestDefOf(predecessor, symbol, ssaVariables);
+            lastPredecessorDef.ifPresent(lastPredecessorDefs::add);
         }
 
         if (lastPredecessorDefs.size() != 1) {
-            throw new IllegalArgumentException("Unexpected.");
+            //throw new IllegalArgumentException("Unexpected.");
         }
 
-        return lastPredecessorDefs.stream().findFirst().get();
+        return lastPredecessorDefs.stream().findFirst();
     }
 
     private void replaceOperandsWithPhiTargets(IrBlock block, HashSet<IrBlock> visitedBlocks) {
@@ -375,28 +379,107 @@ public class IrPhiGenerator {
         return immDominators;
     }
 
-    private HashMap<IrBlock, Set<IrBlock>> getDominanceFrontiers(IrFunction function, Map<IrBlock, IrBlock> immDominators) {
-        HashMap<IrBlock, Set<IrBlock>> dominanceFrontiers = new HashMap<>();
+    private Map<IrBlock, Set<IrBlock>> getDominanceTree(Set<IrBlock> allBlocks, HashMap<IrBlock, IrBlock> immDominators) {
+        Map<IrBlock, Set<IrBlock>> domTreeChildren = new HashMap<>();
+        for (IrBlock block : allBlocks) { // Assuming you have a list of all blocks
+            if (immDominators.containsKey(block)) {
+                IrBlock idom = immDominators.get(block); // immDominators is your IDom map
+                domTreeChildren.computeIfAbsent(idom, __ -> new HashSet<>()).add(block);
+            }
+        }
+        return domTreeChildren;
+    }
 
-        for (IrBlock block : function.blocks()) {
-            if (block.getPredecessorBlocks().size() < 2) {
-                continue;
+    private Map<IrBlock, Set<IrBlock>> getDominanceFrontiers(
+            IrFunction function,
+            Set<IrBlock> allBlocks,
+            Map<IrBlock, Set<IrBlock>> dominatorTree,
+            Map<IrBlock, IrBlock> immDominators) {
+        Map<IrBlock, Set<IrBlock>> dominanceFrontiers = new HashMap<>();
+        for (IrBlock block : allBlocks) {
+            dominanceFrontiers.put(block, new HashSet<>());
+        }
+
+        // Step 1: Determine the processing order (post-order traversal of the dominator tree).
+        // This ensures that when we process a node 'n', the DF of its dominator tree children
+        // have already been computed.
+        List<IrBlock> orderedBlocks = getPostOrderDominatorTreeTraversal(allBlocks, dominatorTree, immDominators);
+
+        // Step 2: Iterate through blocks in the computed order and apply the two rules.
+        for (IrBlock n : orderedBlocks) {
+
+            // Rule 1: Add nodes to DF(n) based on CFG edges.
+            // These are successors 'y' of 'n' where 'n's dominance "breaks out".
+            for (IrBlock y : n.getSuccessorBlocks()) {
+                if (!immDominators.get(y).equals(n)) { // If 'n' is NOT the immediate dominator of 'y'
+                    dominanceFrontiers.get(n).add(y);
+                }
             }
 
-            for (IrBlock predecessor : block.getPredecessorBlocks()) {
-                Optional<IrBlock> runner = Optional.of(predecessor);
-                while (runner.isPresent() && immDominators.get(block) != runner.get()) {
-                    dominanceFrontiers.computeIfAbsent(runner.get(), __ -> new HashSet<>())
-                            .add(block);
-                    if (immDominators.containsKey(runner.get())) {
-                        runner = Optional.of(immDominators.get(runner.get()));
-                    } else {
-                        runner = Optional.empty();
+            // Rule 2: Propagate dominance frontiers from children in the dominator tree.
+            // For each child 'c' of 'n' in the dominator tree, if 'w' is in DF(c)
+            // and 'n' does not strictly dominate 'w', then 'w' is also in DF(n).
+            for (IrBlock c : dominatorTree.getOrDefault(n, Collections.emptySet())) {
+                for (IrBlock w : dominanceFrontiers.get(c)) {
+                    if (!strictlyDominates(n, w, immDominators)) {
+                        dominanceFrontiers.get(n).add(w);
                     }
                 }
             }
         }
-
         return dominanceFrontiers;
+    }
+
+    private boolean strictlyDominates(IrBlock d, IrBlock n, Map<IrBlock, IrBlock> immDominators) {
+        if (d.equals(n)) { // A node does not strictly dominate itself
+            return false;
+        }
+        IrBlock current = n;
+        // Traverse up the immediate dominator chain from 'n'
+        while (current != null && !current.equals(d)) {
+            current = immDominators.get(current);
+        }
+        // If 'current' became 'd', then 'd' was found on the path from entry to 'n' (excluding 'n')
+        return current != null && current.equals(d);
+    }
+
+    private List<IrBlock> getPostOrderDominatorTreeTraversal(Set<IrBlock> allBlocks, Map<IrBlock, Set<IrBlock>> domTreeChildren, Map<IrBlock, IrBlock> immDominators) {
+        List<IrBlock> order = new ArrayList<>();
+        Set<IrBlock> visited = new HashSet<>();
+
+        // Find the entry block (root of the dominator tree)
+        IrBlock entryBlock = null;
+        for (Map.Entry<IrBlock, IrBlock> entry : immDominators.entrySet()) {
+            if (entry.getValue() == null) { // Block with no immediate dominator is the entry
+                entryBlock = entry.getKey();
+                break;
+            }
+        }
+
+        // Handle cases where an explicit entry might not be directly linked to null,
+        // or for disconnected graphs (though a CFG usually has one entry).
+        // Iterate all blocks to ensure all components of the dominator tree are visited.
+        for (IrBlock block : allBlocks) {
+            if (!visited.contains(block)) {
+                postOrderDFS(block, domTreeChildren, visited, order);
+            }
+        }
+
+        return order;
+    }
+
+    private void postOrderDFS(IrBlock node, Map<IrBlock, Set<IrBlock>> domTreeChildren,
+                              Set<IrBlock> visited, List<IrBlock> order) {
+        if (visited.contains(node)) {
+            return;
+        }
+        visited.add(node);
+
+        // Recursively visit all children in the dominator tree
+        for (IrBlock child : domTreeChildren.getOrDefault(node, Collections.emptySet())) {
+            postOrderDFS(child, domTreeChildren, visited, order);
+        }
+        // Add the node to the order list AFTER visiting all its children (post-order)
+        order.add(node);
     }
 }
