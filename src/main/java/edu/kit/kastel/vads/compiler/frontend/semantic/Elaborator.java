@@ -443,7 +443,7 @@ public class Elaborator implements
 
         TypedLoop typedLoop = new TypedLoop(
                 conditionResult.expression(),
-                bodyElaborationResult.block(),
+                bodyElaborationResult.statementOrBlock(),
                 stepResult != null ? Optional.of(stepResult.statement()) : Optional.empty(),
                 forTree.span());
 
