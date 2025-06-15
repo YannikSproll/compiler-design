@@ -163,6 +163,8 @@ class VariableDefinitionAnalysis implements TypedResultVisitor<VariableDefinitio
 
     @Override
     public List<Symbol> visit(TypedLoop loop, VariableDefinitionContext context) {
+        loop.conditionExpression().accept(this, context);
+
         loop.body().accept(this, context);
 
         if (loop.postIterationStatement().isPresent()) {
