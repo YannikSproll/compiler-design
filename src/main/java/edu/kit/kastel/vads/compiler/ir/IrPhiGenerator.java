@@ -24,7 +24,6 @@ public class IrPhiGenerator {
                 dominanceChildren,
                 immDominators);
 
-
         insertPlaceholderPhis(function, ssaVariables, dominanceFrontiers, ssaValueGenerator);
         insertPhiOperands(function.startBlock(), ssaVariables);
         removeInvalidPhis(function);
@@ -57,7 +56,6 @@ public class IrPhiGenerator {
 
             for (IrBlock block : defSites.get(symbol)) {
                 workLists.get(symbol).add(block);
-                hasAlready.get(symbol).add(block);
             }
         }
 
@@ -85,30 +83,6 @@ public class IrPhiGenerator {
                 block.insertInstruction(0, phi);
             }
         }
-        /*for (Map.Entry<Symbol, List<IrBlock>> defSite : defSites.entrySet()) {
-            List<IrBlock> workList = new ArrayList<>(defSite.getValue());
-            HashSet<IrBlock> hasAlready = new HashSet<>();
-            while (!workList.isEmpty()) {
-                IrBlock current = workList.getFirst();
-                workList.remove(current);
-
-
-                for (IrBlock block : dominanceFrontiers.getOrDefault(current, Set.of())) {
-                    if (hasAlready.contains(block)) {
-                        continue;
-                    }
-                    SSAValue phiSSAValue = ssaValueGenerator.generateNewSSAValue();
-                    IrPhi phi = new IrPhi(phiSSAValue, new ArrayList<>());
-                    ssaVariables.introduceNewSSAValue(defSite.getKey(), phiSSAValue);
-                    block.insertInstruction(0, phi);
-                    hasAlready.add(block);
-
-                    if (!defSites.containsKey(defSite.getKey()) || !defSites.get(defSite.getKey()).contains(block)) {
-                        workList.add(block);
-                    }
-                }
-            }
-        }*/
     }
 
     private void computeDefSites(
