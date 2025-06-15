@@ -500,7 +500,7 @@ public class Elaborator implements
 
         TypedLoop typedLoop = new TypedLoop(
                 conditionResult.expression(),
-                bodyResult.block(),
+                bodyResult.statementOrBlock(),
                 Optional.empty(),
                 whileTree.span());
 
