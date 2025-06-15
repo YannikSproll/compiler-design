@@ -470,7 +470,11 @@ public class Elaborator implements
     @Override
     public ElaborationResult visit(IfTree ifTree, ElaborationContext context) {
         ElaborationResult conditionResult = ifTree.conditionExpressionTree().accept(this, context);
-        ElaborationResult thenResult = ifTree.statementTree().accept(this, context);
+
+        Scope thenBranchScope = context.symbolTable().enterScope(ScopeType.BLOCK);
+        TypedStatement thenBranchStatement = ifTree.statementTree().accept(this, context).statementOrBlock();
+        context.symbolTable().exitScope();
+        TypedBlock thenBlock = new TypedBlock(List.of(thenBranchStatement), Optional.of(thenBranchScope), thenBranchStatement.span());
 
         if (conditionResult.expression().type() != HirType.BOOLEAN) {
             throw new SemanticException("If statement must have an boolean type.");
@@ -478,12 +482,16 @@ public class Elaborator implements
 
         Optional<TypedStatement> elseResult = Optional.empty();
         if (ifTree.elseTree() != null) {
-            elseResult = Optional.of(ifTree.elseTree().accept(this, context).statement());
+            Scope elseBranchScope = context.symbolTable().enterScope(ScopeType.BLOCK);
+            TypedStatement elseStatement = ifTree.elseTree().accept(this, context).statementOrBlock();
+            context.symbolTable().exitScope();
+            TypedBlock elseBlock = new TypedBlock(List.of(elseStatement), Optional.of(elseBranchScope), elseStatement.span());
+            elseResult = Optional.of(elseBlock);
         }
 
         TypedIf typedIf = new TypedIf(
                 conditionResult.expression(),
-                thenResult.statementOrBlock(),
+                thenBlock,
                 elseResult,
                 ifTree.span());
 
