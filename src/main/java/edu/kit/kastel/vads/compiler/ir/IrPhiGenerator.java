@@ -77,10 +77,10 @@ public class IrPhiGenerator {
         }
         int x = 0;
 
-        for (Symbol symbol :phiLocations.keySet()) {
+        for (Symbol symbol : phiLocations.keySet()) {
             Set<IrBlock> blocksToInsertPhis = phiLocations.get(symbol);
             for (IrBlock block : blocksToInsertPhis) {
-                IrPhi phi = new IrPhi(ssaValueGenerator.generateNewSSAValue(), new ArrayList<>());
+                IrPhi phi = new IrPhi(ssaValueGenerator.generateNewSSAValue(Optional.of(symbol)), new ArrayList<>());
                 ssaVariables.introduceNewSSAValue(symbol, phi.target());
                 block.insertInstruction(0, phi);
             }

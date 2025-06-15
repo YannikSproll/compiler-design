@@ -55,7 +55,11 @@ public class SsaConstructionContext {
     }
 
     public SSAValue generateNewSSAValue() {
-        return ssaValueGenerator.generateNewSSAValue();
+        return ssaValueGenerator.generateNewSSAValue(Optional.empty());
+    }
+
+    public SSAValue generateNewSSAValue(Symbol symbol) {
+        return ssaValueGenerator.generateNewSSAValue(Optional.of(symbol));
     }
 
     public SSAValueGenerator ssaValueGenerator() {

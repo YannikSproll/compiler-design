@@ -19,7 +19,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
         SSAConstructionResult result = assignment.initializer().accept(this, context);
 
         IrMoveInstruction moveInstruction = new IrMoveInstruction(
-                context.generateNewSSAValue(),
+                context.generateNewSSAValue(assignment.lValue().asVariable().symbol()),
                 result.asSSAValue());
 
         context.currentBlock().addInstruction(moveInstruction);
@@ -98,7 +98,6 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
 
         generateBranchInstruction(conditionResult.asSSAValue(), context.currentBlock(), thenBlock, elseBlock);
 
-
         context.newCurrentBlock(elseBlock);
         SSAConstructionResult elseResult = conditionalExpression.elseExpression().accept(this, context);
         generateJumpInstruction(context.currentBlock(), fBlock);
@@ -132,7 +131,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
             SSAConstructionResult result = declaration.initializer().get().accept(this, context);
 
             IrMoveInstruction moveInstruction = new IrMoveInstruction(
-                    context.generateNewSSAValue(),
+                    context.generateNewSSAValue(declaration.symbol()),
                     result.asSSAValue());
 
             context.introduceNewSSAValue(declaration.symbol(), moveInstruction.target());
