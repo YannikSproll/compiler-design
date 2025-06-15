@@ -422,6 +422,9 @@ public class Elaborator implements
     @Override
     public ElaborationResult visit(ForTree forTree, ElaborationContext context) {
 
+        // Add additional scope to prevent initializer from being visible after loop
+        Scope scope = context.symbolTable().enterScope(ScopeType.BLOCK);
+
         ElaborationResult initializerResult = null;
          if (forTree.initializationStatementTree() != null){
              initializerResult = forTree.initializationStatementTree().accept(this, context);
@@ -456,8 +459,10 @@ public class Elaborator implements
                         initializerResult.statement(),
                         typedLoop)
                 : List.of(typedLoop),
-                Optional.empty(),
+                Optional.of(scope),
                 forTree.span());
+
+        context.symbolTable().exitScope();
 
         return ElaborationResult.block(typedBlock);
     }
