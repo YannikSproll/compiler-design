@@ -196,6 +196,9 @@ public class Elaborator implements
         Optional<TypedExpression> typedInitializer = Optional.empty();
         if (declarationTree.initializer() != null) {
             ElaborationResult initializerResult = declarationTree.initializer().accept(this, context);
+
+            typeChecker.expectType(typeResult.type(), initializerResult.expression());
+
             typedInitializer = Optional.of(initializerResult.expression());
         }
 
