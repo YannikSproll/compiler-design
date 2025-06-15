@@ -6,7 +6,7 @@ import java.util.Optional;
 
 public record TypedLoop(
         TypedExpression conditionExpression,
-        TypedBlock body,
+        TypedStatement body,
         Optional<TypedStatement> postIterationStatement,
         Span span) implements TypedStatement {
     @Override
