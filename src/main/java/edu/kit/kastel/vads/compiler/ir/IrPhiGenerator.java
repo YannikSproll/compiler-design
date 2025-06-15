@@ -167,7 +167,8 @@ public class IrPhiGenerator {
             if (instruction instanceof IrPhi phi) {
                 Symbol phiTargetSymbol = ssaVariables.getInvertedSSAValueMappings().get(phi.target());
                 for (IrBlock predecessor : block.getPredecessorBlocks()) {
-                    Optional<SSAValue> phiSource = getLatestDefOf(predecessor, phiTargetSymbol, ssaVariables);
+                    HashSet<IrBlock> visitedPred = new HashSet<>();
+                    Optional<SSAValue> phiSource = getLatestDefOf(predecessor, visitedPred, phiTargetSymbol, ssaVariables);
                     if (phiSource.isPresent()) {
                         phi.addPhiItem(new IrPhi.IrPhiItem(phiSource.get(), predecessor));
                     }
@@ -180,7 +181,12 @@ public class IrPhiGenerator {
         }
     }
 
-    private Optional<SSAValue> getLatestDefOf(IrBlock block, Symbol symbol, SSAVariableRenameRecording ssaVariables) {
+    // TODO: Rewrite
+    private Optional<SSAValue> getLatestDefOf(IrBlock block, Set<IrBlock> visitedBlocks, Symbol symbol, SSAVariableRenameRecording ssaVariables) {
+        if (!visitedBlocks.add(block)){
+            return Optional.empty();
+        }
+
         List<SSAValue> ssaValues = new ArrayList<>();
 
         for (IrInstruction instruction : block.getInstructions()) {
@@ -202,7 +208,7 @@ public class IrPhiGenerator {
 
         HashSet<SSAValue> lastPredecessorDefs = new HashSet<>();
         for (IrBlock predecessor : block.getPredecessorBlocks()) {
-            Optional<SSAValue> lastPredecessorDef = getLatestDefOf(predecessor, symbol, ssaVariables);
+            Optional<SSAValue> lastPredecessorDef = getLatestDefOf(predecessor, visitedBlocks, symbol, ssaVariables);
             lastPredecessorDef.ifPresent(lastPredecessorDefs::add);
         }
 
@@ -467,37 +473,6 @@ public class IrPhiGenerator {
         for (IrBlock block : allBlocks) {
             dominanceFrontiers.put(block, new HashSet<>());
         }
-        /*
-        for (IrBlock block : allBlocks) {
-            for (IrBlock predecessor : block.getPredecessorBlocks()) {
-                if (immDominators.get(block) != predecessor) {
-                    dominanceFrontiers.get(block).add(predecessor);
-                }
-            }
-        }
-
-        List<IrBlock> blocks = getPostOrderDominatorTreeTraversal(allBlocks, dominatorTree, immDominators);
-        for (IrBlock block : blocks) {
-            for (IrBlock c : dominatorTree.getOrDefault(block, Set.of())) {
-                for (IrBlock w : dominanceFrontiers.get(c)) {
-                    if (immDominators.get(w) != block) {
-                        dominanceFrontiers.get(block).add(w);
-                    }
-                }
-            }
-        }*/
-
-        int x = 5;
-        /*for (IrBlock block : allBlocks) {
-            for (IrBlock predecessor : block.getPredecessorBlocks()) {
-                IrBlock runner = predecessor;
-
-                while (runner != block && runner != immDominators.get(block)) {
-                    dominanceFrontiers.get(runner).add(block);
-                    runner = immDominators.get(runner);
-                }
-            }
-        }*/
 
         // Step 1: Determine the processing order (post-order traversal of the dominator tree).
         // This ensures that when we process a node 'n', the DF of its dominator tree children
