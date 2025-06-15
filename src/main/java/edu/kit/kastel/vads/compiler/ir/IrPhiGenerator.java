@@ -25,7 +25,9 @@ public class IrPhiGenerator {
                 immDominators);
 
         insertPlaceholderPhis(function, ssaVariables, dominanceFrontiers, ssaValueGenerator);
+        //new IrFunctionPrinter().print(function);
         insertPhiOperands(function.startBlock(), ssaVariables);
+        //new IrFunctionPrinter().print(function);
         removeInvalidPhis(function);
         // Insert phis
         HashSet<IrBlock> blocks = new HashSet<>();
@@ -79,7 +81,7 @@ public class IrPhiGenerator {
             Set<IrBlock> blocksToInsertPhis = phiLocations.get(symbol);
             for (IrBlock block : blocksToInsertPhis) {
                 IrPhi phi = new IrPhi(ssaValueGenerator.generateNewSSAValue(Optional.of(symbol)), new ArrayList<>());
-                ssaVariables.introduceNewSSAValue(symbol, phi.target());
+                ssaVariables.introduceNewSSAValue(phi.target(), block);
                 block.insertInstruction(0, phi);
             }
         }

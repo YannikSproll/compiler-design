@@ -19,13 +19,10 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
         SSAConstructionResult result = assignment.initializer().accept(this, context);
 
         IrMoveInstruction moveInstruction = new IrMoveInstruction(
-                context.generateNewSSAValue(assignment.lValue().asVariable().symbol()),
+                context.generateNewSSAValue(assignment.lValue().asVariable().symbol(), context.currentBlock()),
                 result.asSSAValue());
 
         context.currentBlock().addInstruction(moveInstruction);
-        context.introduceNewSSAValue(
-                assignment.lValue().asVariable().symbol(),
-                moveInstruction.target());
 
         return SSAConstructionResult.statement();
     }
@@ -35,7 +32,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
         SSAConstructionResult lExpResult = operation.lhsExpression().accept(this, context);
         SSAConstructionResult rExpResult = operation.rhsExpression().accept(this, context);
 
-        SSAValue targetValue = context.generateNewSSAValue();
+        SSAValue targetValue = context.generateNewSSAValue(context.currentBlock());
         IrValueProducingInstruction instruction = switch (operation.operator()) {
             case ADD -> new IrAddInstruction(targetValue, lExpResult.asSSAValue(), rExpResult.asSSAValue());
             case SUBTRACT -> new IrSubInstruction(targetValue, lExpResult.asSSAValue(), rExpResult.asSSAValue());
@@ -75,7 +72,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
     @Override
     public SSAConstructionResult visit(TypedBoolLiteral literal, SsaConstructionContext context) {
         IrBoolConstantInstruction boolConstantInstruction = new IrBoolConstantInstruction(
-                context.generateNewSSAValue(),
+                context.generateNewSSAValue(context.currentBlock()),
                 literal.value());
         context.currentBlock().addInstruction(boolConstantInstruction);
         return SSAConstructionResult.ssaValue(boolConstantInstruction.target());
@@ -108,7 +105,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
 
         context.newCurrentBlock(fBlock);
         IrPhi phi = new IrPhi(
-                context.generateNewSSAValue(),
+                context.generateNewSSAValue(context.currentBlock()),
                 List.of(
                         new IrPhi.IrPhiItem(elseResult.asSSAValue(), elseBlock),
                         new IrPhi.IrPhiItem(thenResult.asSSAValue(), thenBlock)
@@ -131,10 +128,8 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
             SSAConstructionResult result = declaration.initializer().get().accept(this, context);
 
             IrMoveInstruction moveInstruction = new IrMoveInstruction(
-                    context.generateNewSSAValue(declaration.symbol()),
+                    context.generateNewSSAValue(declaration.symbol(), context.currentBlock()),
                     result.asSSAValue());
-
-            context.introduceNewSSAValue(declaration.symbol(), moveInstruction.target());
             context.currentBlock().addInstruction(moveInstruction);
         }
 
@@ -236,7 +231,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
     @Override
     public SSAConstructionResult visit(TypedIntLiteral literal, SsaConstructionContext context) {
         IrIntConstantInstruction constantInstruction = new IrIntConstantInstruction(
-                context.generateNewSSAValue(),
+                context.generateNewSSAValue(context.currentBlock()),
                 literal.value());
         context.currentBlock().addInstruction(constantInstruction);
 
@@ -324,7 +319,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
     public SSAConstructionResult visit(TypedUnaryOperation operation, SsaConstructionContext context) {
         SSAConstructionResult result = operation.expression().accept(this, context);
 
-        SSAValue targetValue = context.generateNewSSAValue();
+        SSAValue targetValue = context.generateNewSSAValue(context.currentBlock());
         IrValueProducingInstruction instruction = switch(operation.operator()) {
             case BITWISE_NOT -> new IrBitwiseNotInstruction(targetValue, result.asSSAValue());
             case NEGATION -> new IrNegateInstruction(targetValue, result.asSSAValue());

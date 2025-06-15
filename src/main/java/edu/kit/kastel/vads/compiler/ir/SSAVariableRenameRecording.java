@@ -7,13 +7,15 @@ import java.util.*;
 public final class SSAVariableRenameRecording {
     private final Map<Symbol, List<SSAValue>> ssaValueMappings;
     private final Map<SSAValue, Symbol> invertedMappings;
+    private final Map<IrBlock, List<SSAValue>> ssaValuesByDefiningBlocks;
 
     public SSAVariableRenameRecording() {
         this.ssaValueMappings = new HashMap<>();
         this.invertedMappings = new HashMap<>();
+        this.ssaValuesByDefiningBlocks = new HashMap<>();
     }
 
-    private SSAVariableRenameRecording(Map<Symbol, List<SSAValue>> ssaValueMappings) {
+    private SSAVariableRenameRecording(Map<Symbol, List<SSAValue>> ssaValueMappings, Map<IrBlock, List<SSAValue>> ssaValuesByDefiningBlocks) {
         this.ssaValueMappings = ssaValueMappings;
 
         Map<SSAValue, Symbol> invertedMappings = new HashMap<>();
@@ -24,19 +26,20 @@ public final class SSAVariableRenameRecording {
         }
 
         this.invertedMappings = invertedMappings;
+        this.ssaValuesByDefiningBlocks = ssaValuesByDefiningBlocks;
     }
 
-    public void introduceNewSSAValue(Symbol symbol, SSAValue ssaValue) {
-        ssaValueMappings.computeIfAbsent(symbol, _ -> new ArrayList<>()).add(ssaValue);
-        invertedMappings.computeIfAbsent(ssaValue, _ -> symbol);
+    public void introduceNewSSAValue(SSAValue ssaValue, IrBlock definingBlock) {
+        if (ssaValue.symbol().isPresent()) {
+            Symbol symbol = ssaValue.symbol().get();
+            ssaValueMappings.computeIfAbsent(symbol, _ -> new ArrayList<>()).add(ssaValue);
+            invertedMappings.computeIfAbsent(ssaValue, _ -> symbol);
+        }
+        ssaValuesByDefiningBlocks.computeIfAbsent(definingBlock, _ -> new ArrayList<>()).add(ssaValue);
     }
 
     public SSAValue getLatestSSAValue(Symbol symbol) {
         return ssaValueMappings.get(symbol).getLast();
-    }
-
-    public boolean containsSymbol(Symbol symbol) {
-        return ssaValueMappings.containsKey(symbol);
     }
 
     public Map<Symbol, SSAValue> getLatestSSAValues() {
@@ -49,6 +52,8 @@ public final class SSAVariableRenameRecording {
 
     public void clear() {
         ssaValueMappings.clear();
+        invertedMappings.clear();
+        ssaValuesByDefiningBlocks.clear();
     }
 
     public Map<Symbol, List<SSAValue>> getSSAValueMappings() {
@@ -65,6 +70,12 @@ public final class SSAVariableRenameRecording {
             newMappings.put(entry.getKey(), newValues);
         }
 
-        return new SSAVariableRenameRecording(newMappings);
+        Map<IrBlock, List<SSAValue>> ssaValuesByDefiningBlocks = new HashMap<>();
+        for (Map.Entry<IrBlock, List<SSAValue>> entry : this.ssaValuesByDefiningBlocks.entrySet()) {
+            List<SSAValue> newValues = new ArrayList<>(entry.getValue());
+            ssaValuesByDefiningBlocks.put(entry.getKey(), newValues);
+        }
+
+        return new SSAVariableRenameRecording(newMappings, ssaValuesByDefiningBlocks);
     }
 }

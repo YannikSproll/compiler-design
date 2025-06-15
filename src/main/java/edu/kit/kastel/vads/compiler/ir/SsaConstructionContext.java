@@ -54,26 +54,28 @@ public class SsaConstructionContext {
         return blocks;
     }
 
-    public SSAValue generateNewSSAValue() {
-        return ssaValueGenerator.generateNewSSAValue(Optional.empty());
+    public SSAValue generateNewSSAValue(IrBlock definingBlock) {
+        SSAValue newValue = ssaValueGenerator.generateNewSSAValue(Optional.empty());
+        globalVariableNameRecording.introduceNewSSAValue(newValue, definingBlock);
+        return newValue;
     }
 
-    public SSAValue generateNewSSAValue(Symbol symbol) {
-        return ssaValueGenerator.generateNewSSAValue(Optional.of(symbol));
+    public SSAValue generateNewSSAValue(Symbol symbol, IrBlock definingBlock) {
+        SSAValue newValue =  ssaValueGenerator.generateNewSSAValue(Optional.of(symbol));
+        globalVariableNameRecording.introduceNewSSAValue(newValue, definingBlock);
+        return newValue;
     }
 
     public SSAValueGenerator ssaValueGenerator() {
         return ssaValueGenerator;
     }
 
-    public void introduceNewSSAValue(Symbol symbol, SSAValue ssaValue) {
-        globalVariableNameRecording.introduceNewSSAValue(symbol, ssaValue);
-    }
-
     public SSAValue getLatestSSAValue(Symbol symbol) {
+
         return globalVariableNameRecording.getLatestSSAValue(symbol);
     }
     public SSAVariableRenameRecording getSSAVariables() {
+
         return globalVariableNameRecording.copy();
     }
 

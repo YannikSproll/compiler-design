@@ -42,7 +42,7 @@ public class InstructionSelector {
 
             deSSA(function);
 
-            new IrFunctionPrinter().print(function);
+            //new IrFunctionPrinter().print(function);
 
             LivenessAnalysisResult livenessAnalysisResult = livenessAnalysis.run(function);
 
