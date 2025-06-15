@@ -180,25 +180,21 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     public void generateLeftShift(CodeGenerationContext generationContext, IrLeftShiftInstruction instruction) {
         RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
 
-        Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
-        Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
+        Register valueRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
+        Register shiftCountRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
+        if (shiftCountRegister != X86Register.REG_CX) {
+            generateMove(allocationResult, shiftCountRegister, X86Register.REG_CX, BitSize.BIT_32);
+        }
+
         if (targetRegister instanceof StackSlot) {
-            instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateLeftShiftInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+            instructionGenerator.generateMoveInstruction(valueRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateLeftShiftInstruction(X86Register.REG_CX, allocationResult.tempRegister(), BitSize.BIT_32)
                     .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
         } else {
-            if (rightOperandRegister == targetRegister) {
-                instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                        .generateLeftShiftInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                        .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
-            } else if (leftOperandRegister == targetRegister) {
-                instructionGenerator.generateLeftShiftInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
-            } else {
-                instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister, BitSize.BIT_32)
-                        .generateLeftShiftInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
-            }
+            generateMove(allocationResult, valueRegister, targetRegister, BitSize.BIT_32);
+            instructionGenerator.generateLeftShiftInstruction(X86Register.REG_CX, targetRegister, BitSize.BIT_32);
         }
     }
 
@@ -206,25 +202,21 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     public void generateRightShift(CodeGenerationContext generationContext, IrRightShiftInstruction instruction) {
         RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
 
-        Register leftOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
-        Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
+        Register valueRegister = allocationResult.nodeToRegisterMapping().get(instruction.leftSrc());
+        Register shiftCountRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
+        if (shiftCountRegister != X86Register.REG_CX) {
+            generateMove(allocationResult, shiftCountRegister, X86Register.REG_CX, BitSize.BIT_32);
+        }
+
         if (targetRegister instanceof StackSlot) {
-            instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateRightShiftInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+            instructionGenerator.generateMoveInstruction(valueRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateRightShiftInstruction(X86Register.REG_CX, allocationResult.tempRegister(), BitSize.BIT_32)
                     .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
         } else {
-            if (rightOperandRegister == targetRegister) {
-                instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                        .generateRightShiftInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                        .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
-            } else if (leftOperandRegister == targetRegister) {
-                instructionGenerator.generateRightShiftInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
-            } else {
-                instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister, BitSize.BIT_32)
-                        .generateRightShiftInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
-            }
+            generateMove(allocationResult, valueRegister, targetRegister, BitSize.BIT_32);
+            instructionGenerator.generateRightShiftInstruction(X86Register.REG_CX, targetRegister, BitSize.BIT_32);
         }
     }
 

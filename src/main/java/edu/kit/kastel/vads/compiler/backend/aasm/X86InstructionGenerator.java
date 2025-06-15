@@ -173,22 +173,22 @@ public class X86InstructionGenerator {
         return this;
     }
 
-    public X86InstructionGenerator generateLeftShiftInstruction(InstructionParameter sourceRegister, InstructionParameter destinationRegister, BitSize bitSize) {
+    public X86InstructionGenerator generateLeftShiftInstruction(InstructionParameter shiftCount, InstructionParameter destinationRegister, BitSize bitSize) {
         generateIndentationSpace();
         builder.append(formatter.formatInstruction(X86Instruction.LEFT_SHIFT, bitSize))
                 .append(" ")
-                .append(formatInstructionParameter(sourceRegister, bitSize))
+                .append(formatInstructionParameter(shiftCount, BitSize.BIT_8))
                 .append(REGISTER_SEPARATOR)
                 .append(formatInstructionParameter(destinationRegister, bitSize))
                 .append(NEW_LINE);
         return this;
     }
 
-    public X86InstructionGenerator generateRightShiftInstruction(InstructionParameter sourceRegister, InstructionParameter destinationRegister, BitSize bitSize) {
+    public X86InstructionGenerator generateRightShiftInstruction(InstructionParameter shiftCount, InstructionParameter destinationRegister, BitSize bitSize) {
         generateIndentationSpace();
         builder.append(formatter.formatInstruction(X86Instruction.RIGHT_SHIFT, bitSize))
                 .append(" ")
-                .append(formatInstructionParameter(sourceRegister, bitSize))
+                .append(formatInstructionParameter(shiftCount, BitSize.BIT_8))
                 .append(REGISTER_SEPARATOR)
                 .append(formatInstructionParameter(destinationRegister, bitSize))
                 .append(NEW_LINE);

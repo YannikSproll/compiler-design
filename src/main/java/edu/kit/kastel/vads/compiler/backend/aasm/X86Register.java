@@ -25,7 +25,6 @@ public enum X86Register implements Register {
     public static Set<Register> getGeneralPurposeRegisters() {
         return Set.of(
                 REG_BX,
-                REG_CX,
                 REG_SI,
                 REG_DI,
                 REG_8,
