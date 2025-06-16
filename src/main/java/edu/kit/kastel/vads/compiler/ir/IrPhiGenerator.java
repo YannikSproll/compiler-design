@@ -27,13 +27,13 @@ public class IrPhiGenerator {
         insertPlaceholderPhis(function, ssaVariables, dominanceFrontiers, ssaValueGenerator);
         //new IrFunctionPrinter().print(function);
         insertPhiOperands(function.startBlock(), ssaVariables);
-        new IrFunctionPrinter().print(function);
+        //new IrFunctionPrinter().print(function);
         //removeInvalidPhis(function);
         // Insert phis
         iteratePhis(function, dominanceChildren);
-        new IrFunctionPrinter().print(function);
+        //new IrFunctionPrinter().print(function);
         removeTrivialPhis(function, dominanceChildren);
-        new IrFunctionPrinter().print(function);
+        //new IrFunctionPrinter().print(function);
 
         return function;
     }
