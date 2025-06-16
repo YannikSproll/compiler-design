@@ -70,10 +70,37 @@ public class SsaConstructionContext {
         return ssaValueGenerator;
     }
 
-    public SSAValue getLatestSSAValue(Symbol symbol) {
+    public SSAValue getLatestSSAValue(Symbol symbol, IrBlock block) {
+        HashSet<IrBlock> visitedSsaValues = new HashSet<>();
+        Optional<SSAValue> ssaValue = getLatestSSAValue(symbol, block, visitedSsaValues);
+        if (ssaValue.isEmpty()) {
+            throw new IllegalStateException("No SSAValue found for symbol " + symbol);
+        }
 
-        return globalVariableNameRecording.getLatestSSAValue(symbol);
+        return ssaValue.get();
     }
+
+    private Optional<SSAValue> getLatestSSAValue(Symbol symbol, IrBlock currentBlock, HashSet<IrBlock> visitedBlocks) {
+        if (!visitedBlocks.add(currentBlock)) {
+            return Optional.empty();
+        }
+
+        Optional<SSAValue> foundSSAValue = globalVariableNameRecording.getLatestSSAValue(symbol, currentBlock);
+        if (foundSSAValue.isPresent()) {
+            return foundSSAValue;
+        }
+
+        for (IrBlock predecessor : currentBlock.getPredecessorBlocks()) {
+            foundSSAValue = getLatestSSAValue(symbol, predecessor, visitedBlocks);
+            if (foundSSAValue.isPresent()) {
+                break;
+            }
+        }
+
+        return foundSSAValue;
+    }
+
+
     public SSAVariableRenameRecording getSSAVariables() {
 
         return globalVariableNameRecording.copy();

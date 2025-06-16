@@ -1,6 +1,7 @@
 package edu.kit.kastel.vads.compiler.ir;
 
 import edu.kit.kastel.vads.compiler.frontend.semantic.hir.Symbol;
+import edu.kit.kastel.vads.compiler.ir.ValueProducingInstructions.IrValueProducingInstruction;
 
 import java.util.*;
 
@@ -38,8 +39,18 @@ public final class SSAVariableRenameRecording {
         ssaValuesByDefiningBlocks.computeIfAbsent(definingBlock, _ -> new ArrayList<>()).add(ssaValue);
     }
 
-    public SSAValue getLatestSSAValue(Symbol symbol) {
-        return ssaValueMappings.get(symbol).getLast();
+    public Optional<SSAValue> getLatestSSAValue(Symbol symbol, IrBlock block) {
+        List<SSAValue> definedInBlock = ssaValuesByDefiningBlocks.getOrDefault(block, List.of());
+        if (definedInBlock.stream().anyMatch(x -> x.symbol().isPresent() && x.symbol().get().equals(symbol))) {
+            for (IrInstruction instruction : block.getInstructions().reversed()) {
+                if (instruction instanceof IrValueProducingInstruction valueProducingInstruction
+                    && valueProducingInstruction.target().symbol().isPresent()
+                    && valueProducingInstruction.target().symbol().get().equals(symbol)) {
+                    return Optional.of(valueProducingInstruction.target());
+                }
+            }
+        }
+        return Optional.empty();
     }
 
     public Map<Symbol, SSAValue> getLatestSSAValues() {

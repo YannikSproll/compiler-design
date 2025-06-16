@@ -321,6 +321,120 @@ public class IrPhiGenerator {
         }
     }
 
+    private void renamePhiOperands(IrBlock startBlock,
+                                   IrBlock predecessorBlock,
+                                   Map<IrBlock, Set<IrBlock>> dominanceChildren,
+                                   Map<Symbol, Stack<SSAValue>> ssaValues) {
+
+        Map<Symbol, Integer> newSSAValuesCounters = new HashMap<>();
+        for (IrInstruction instruction : startBlock.getInstructions()) {
+            if (instruction instanceof IrPhi phi) {
+                for (IrPhi.IrPhiItem phiItem : phi.sources()) {
+                    if (phiItem.block() == predecessorBlock) {
+                        Symbol phiItemSymbol = phiItem.value().symbol().get();
+                        phiItem.changeValue(ssaValues.get(phiItemSymbol).peek());
+                    }
+                }
+
+                Symbol phiTargetSymbol = phi.target().symbol().get();
+                ssaValues.computeIfAbsent(phiTargetSymbol, _ -> new Stack<>()).push(phi.target());
+
+                if (newSSAValuesCounters.containsKey(phiTargetSymbol)) {
+                    newSSAValuesCounters.put(phiTargetSymbol, newSSAValuesCounters.get(phiTargetSymbol) + 1);
+                } else {
+                    newSSAValuesCounters.put(phiTargetSymbol, 1);
+                }
+            }
+        }
+
+        for (IrInstruction instruction : startBlock.getInstructions()) {
+            switch (instruction) {
+                case IrBinaryOperationInstruction binaryOperationInstruction:
+                    if (binaryOperationInstruction.leftSrc().symbol().isPresent()) {
+                        binaryOperationInstruction.replaceLeftSrc(
+                                ssaValues.get(binaryOperationInstruction.leftSrc().symbol().get()).peek());
+                    }
+                    if (binaryOperationInstruction.rightSrc().symbol().isPresent()) {
+                        binaryOperationInstruction.replaceRightSrc(
+                                ssaValues.get(binaryOperationInstruction.rightSrc().symbol().get()).peek());
+                    }
+                    if (binaryOperationInstruction.target().symbol().isPresent()) {
+                        Symbol targetSymbol = binaryOperationInstruction.target().symbol().get();
+                        ssaValues.computeIfAbsent(targetSymbol, _ -> new Stack<>())
+                                .push(binaryOperationInstruction.target());
+
+                        if (newSSAValuesCounters.containsKey(targetSymbol)) {
+                            newSSAValuesCounters.put(targetSymbol, newSSAValuesCounters.get(targetSymbol) + 1);
+                        } else {
+                            newSSAValuesCounters.put(targetSymbol, 1);
+                        }
+                    }
+                    break;
+                case IrBranchInstruction irBranchInstruction:
+                    if (irBranchInstruction.conditionValue().symbol().isPresent()) {
+                        irBranchInstruction.replaceConditionValue(
+                                ssaValues.get(irBranchInstruction.conditionValue().symbol().get()).peek());
+                    }
+                    break;
+                case IrReturnInstruction irReturnInstruction:
+                    if (irReturnInstruction.src().symbol().isPresent()) {
+                        irReturnInstruction.replaceSrc(
+                                ssaValues.get(irReturnInstruction.src().symbol().get()).peek());
+                    }
+                    break;
+                case IrMoveInstruction irMoveInstruction:
+                    if (irMoveInstruction.source().symbol().isPresent()) {
+                        irMoveInstruction.replaceSource(
+                                ssaValues.get(irMoveInstruction.source().symbol().get()).peek());
+                    }
+                    if (irMoveInstruction.target().symbol().isPresent()) {
+                        Symbol targetSymbol = irMoveInstruction.target().symbol().get();
+
+                        ssaValues.computeIfAbsent(targetSymbol, _ -> new Stack<>())
+                                .push(irMoveInstruction.target());
+
+                        if (newSSAValuesCounters.containsKey(targetSymbol)) {
+                            newSSAValuesCounters.put(targetSymbol, newSSAValuesCounters.get(targetSymbol) + 1);
+                        } else {
+                            newSSAValuesCounters.put(targetSymbol, 1);
+                        }
+                    }
+                    break;
+                case IrUnaryOperationInstruction irUnaryOperationInstruction:
+                    if (irUnaryOperationInstruction.src().symbol().isPresent()) {
+                        irUnaryOperationInstruction.replaceSrc(
+                                ssaValues.get(irUnaryOperationInstruction.src().symbol().get()).peek());
+                    }
+                    if (irUnaryOperationInstruction.target().symbol().isPresent()) {
+                        Symbol targetSymbol = irUnaryOperationInstruction.target().symbol().get();
+
+                        ssaValues.computeIfAbsent(targetSymbol, _ -> new Stack<>())
+                                .push(irUnaryOperationInstruction.target());
+
+                        if (newSSAValuesCounters.containsKey(targetSymbol)) {
+                            newSSAValuesCounters.put(targetSymbol, newSSAValuesCounters.get(targetSymbol) + 1);
+                        } else {
+                            newSSAValuesCounters.put(targetSymbol, 1);
+                        }
+                    }
+                    break;
+                case IrJumpInstruction _, IrIntConstantInstruction _, IrBoolConstantInstruction _, IrPhi _:
+                    break;
+            }
+        }
+
+        for (IrBlock dominatorChild : dominanceChildren.getOrDefault(startBlock, Set.of())) {
+            renamePhiOperands(dominatorChild, startBlock, dominanceChildren, ssaValues);
+        }
+
+        for (Map.Entry<Symbol, Integer> entry : newSSAValuesCounters.entrySet()) {
+            for (int i = 0; i < entry.getValue(); i++) {
+                ssaValues.get(entry.getKey()).pop();
+            }
+        }
+    }
+
+
     private HashMap<IrBlock, Set<IrBlock>> buildDominatorTree(IrFunction function) {
         HashMap<IrBlock, Set<IrBlock>> dominators = initDominatorTree(function);
 

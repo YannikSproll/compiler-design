@@ -278,6 +278,11 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
                 // which would have already generated a jump to the post iteration statement
                 generateJumpInstruction(context.currentBlock(), postIterationStatementBlock);
             }
+            else {
+                // Add this to avoid error during variable symbol resolving in condition expression
+                // ssa generation
+                context.currentBlock().addSuccessorBlock(postIterationStatementBlock);
+            }
 
             //Add post iteration statement block if post iteration statement is present
             context.newCurrentBlock(postIterationStatementBlock);
@@ -290,6 +295,10 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
                 // Body does not end in break or continue,
                 // which would have already generated a jump to the post iteration statement
                 generateJumpInstruction(context.currentBlock(), conditionEvaluationBlock);
+            } else {
+                // Add this to avoid error during variable symbol resolving in condition expression
+                // ssa generation
+                context.currentBlock().addSuccessorBlock(conditionEvaluationBlock);
             }
         }
 
@@ -333,6 +342,6 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
 
     @Override
     public SSAConstructionResult visit(TypedVariable variable, SsaConstructionContext context) {
-        return SSAConstructionResult.ssaValue(context.getLatestSSAValue(variable.symbol()));
+        return SSAConstructionResult.ssaValue(context.getLatestSSAValue(variable.symbol(), context.currentBlock()));
     }
 }
