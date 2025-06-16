@@ -320,9 +320,18 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
-        instructionGenerator
-                .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, BitSize.BIT_32)
-                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.EQUAL);
+        if (leftOperandRegister instanceof StackSlot
+            && rightOperandRegister instanceof StackSlot) {
+            instructionGenerator
+                    .generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateComparisonInstruction(allocationResult.tempRegister(), rightOperandRegister, BitSize.BIT_32)
+                    .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.EQUAL);
+        } else {
+            instructionGenerator
+                    .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, BitSize.BIT_32)
+                    .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.EQUAL);
+        }
+
     }
 
     @Override
@@ -333,9 +342,17 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
-        instructionGenerator
-                .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, BitSize.BIT_32)
-                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.NOT_EQUAL);
+        if (leftOperandRegister instanceof StackSlot
+                && rightOperandRegister instanceof StackSlot) {
+            instructionGenerator
+                    .generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateComparisonInstruction(allocationResult.tempRegister(), rightOperandRegister, BitSize.BIT_32)
+                    .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.NOT_EQUAL);
+        } else {
+            instructionGenerator
+                    .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, BitSize.BIT_32)
+                    .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.NOT_EQUAL);
+        }
     }
 
     @Override
@@ -346,9 +363,18 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
-        instructionGenerator
-                .generateComparisonInstruction(rightOperandRegister, leftOperandRegister, BitSize.BIT_32)
-                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.GREATER_THAN);
+        if (leftOperandRegister instanceof StackSlot
+                && rightOperandRegister instanceof StackSlot) {
+            instructionGenerator
+                    .generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateComparisonInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.GREATER_THAN);
+        } else {
+            instructionGenerator
+                    .generateComparisonInstruction(rightOperandRegister, leftOperandRegister, BitSize.BIT_32)
+                    .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.GREATER_THAN);
+        }
+
     }
 
     @Override
@@ -359,9 +385,17 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
-        instructionGenerator
-                .generateComparisonInstruction(rightOperandRegister, leftOperandRegister, BitSize.BIT_32)
-                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.LESS_THAN);
+        if (leftOperandRegister instanceof StackSlot
+                && rightOperandRegister instanceof StackSlot) {
+            instructionGenerator
+                    .generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateComparisonInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.LESS_THAN);
+        } else {
+            instructionGenerator
+                    .generateComparisonInstruction(rightOperandRegister, leftOperandRegister, BitSize.BIT_32)
+                    .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.LESS_THAN);
+        }
     }
 
     @Override
@@ -372,9 +406,18 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
-        instructionGenerator
-                .generateComparisonInstruction(rightOperandRegister, leftOperandRegister, BitSize.BIT_32)
-                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.GREATER_THAN_OR_EQUAL);
+        if (leftOperandRegister instanceof StackSlot
+                && rightOperandRegister instanceof StackSlot) {
+            instructionGenerator
+                    .generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateComparisonInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.GREATER_THAN_OR_EQUAL);
+        } else {
+            instructionGenerator
+                    .generateComparisonInstruction(rightOperandRegister, leftOperandRegister, BitSize.BIT_32)
+                    .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.GREATER_THAN_OR_EQUAL);
+        }
+
     }
 
     @Override
@@ -385,9 +428,18 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
-        instructionGenerator
-                .generateComparisonInstruction(rightOperandRegister, leftOperandRegister, BitSize.BIT_32)
-                .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.LESS_THAN_OR_EQUAL);
+        if (leftOperandRegister instanceof StackSlot
+                && rightOperandRegister instanceof StackSlot) {
+            instructionGenerator
+                    .generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateComparisonInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.LESS_THAN_OR_EQUAL);
+        } else {
+            instructionGenerator
+                    .generateComparisonInstruction(rightOperandRegister, leftOperandRegister, BitSize.BIT_32)
+                    .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.LESS_THAN_OR_EQUAL);
+        }
+
     }
 
     @Override
@@ -441,7 +493,7 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
                 = generationContext.ssaValueByProducingInstructions().get(instruction.conditionValue());
 
         if (isComparisonInstruction(conditionProducingInstruction)) {
-            // Instruction is a comparision -> use flags directly
+            // Instruction is a comparison -> use flags directly
             instructionGenerator
                     .generateConditionalJumpInstruction(
                             mapIrComparisonToX86ConditionCode(conditionProducingInstruction),
