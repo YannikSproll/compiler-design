@@ -310,9 +310,11 @@ public class IrPhiGenerator {
                     updateOperandsToReplace.remove(operand);
                 } else {
                     boolean replaced = replacePhiOperandInInstruction(instruction, newOperand, operand, Optional.of(comingFrom));
-                    if (replaced && instruction instanceof IrPhi phi) {
-                        updateOperandsToReplace.remove(operand);
-                        // Add phi to be recomputed
+
+                    if (instruction instanceof IrPhi phi) {
+                        if (replaced || phi.containsOperand(operand)) {
+                            updateOperandsToReplace.remove(operand);
+                        }
                     }
                 }
 

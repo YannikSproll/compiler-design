@@ -33,6 +33,10 @@ public record IrPhi(
         return values.stream().findAny();
     }
 
+    public boolean containsOperand(SSAValue ssaValue) {
+        return sources.stream().anyMatch(x -> x.value() == ssaValue);
+    }
+
     public static final class IrPhiItem {
         private SSAValue value;
         private final IrBlock block;
