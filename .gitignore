@@ -1,3 +1,5 @@
 /build/
 /.idea/
 /.gradle/
+/test-programs
+/crow-client-linux
