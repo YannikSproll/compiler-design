@@ -432,8 +432,11 @@ public class Elaborator implements
 
         ElaborationResult conditionResult = forTree.conditionExpressionTree().accept(this, context);
 
-        ElaborationResult stepResult = null;
+        context.incrementNestedLoopDepth();
+        ElaborationResult bodyElaborationResult = forTree.bodyStatementTree().accept(this, context);
+        context.decrementNestedLoopDepth();
 
+        ElaborationResult stepResult = null;
         if (forTree.postIterationStatementTree() != null) {
             stepResult = forTree.postIterationStatementTree().accept(this, context);
 
@@ -442,10 +445,6 @@ public class Elaborator implements
                 throw new SemanticException("Step statement of for loop may not be a declaration.");
             }
         }
-
-        context.incrementNestedLoopDepth();
-        ElaborationResult bodyElaborationResult = forTree.bodyStatementTree().accept(this, context);
-        context.decrementNestedLoopDepth();
 
         TypedLoop typedLoop = new TypedLoop(
                 conditionResult.expression(),

@@ -165,13 +165,16 @@ class VariableDefinitionAnalysis implements TypedResultVisitor<VariableDefinitio
     public List<Symbol> visit(TypedLoop loop, VariableDefinitionContext context) {
         loop.conditionExpression().accept(this, context);
 
-        loop.body().accept(this, context);
+        List<Symbol> definedByBody = loop.body().accept(this, context);
+        for (Symbol symbol : definedByBody) {
+            context.defineSymbol(symbol);
+        }
 
         if (loop.postIterationStatement().isPresent()) {
             loop.postIterationStatement().get().accept(this, context);
         }
 
-        return List.of();
+        return definedByBody;
     }
 
     @Override
