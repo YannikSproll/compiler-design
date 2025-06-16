@@ -27,11 +27,13 @@ public class IrPhiGenerator {
         insertPlaceholderPhis(function, ssaVariables, dominanceFrontiers, ssaValueGenerator);
         //new IrFunctionPrinter().print(function);
         insertPhiOperands(function.startBlock(), ssaVariables);
-        //new IrFunctionPrinter().print(function);
-        removeInvalidPhis(function);
+        new IrFunctionPrinter().print(function);
+        //removeInvalidPhis(function);
         // Insert phis
-        HashSet<IrBlock> blocks = new HashSet<>();
-        replaceOperandsWithPhiTargets(function.startBlock(), blocks);
+        iteratePhis(function, dominanceChildren);
+        new IrFunctionPrinter().print(function);
+        removeTrivialPhis(function, dominanceChildren);
+        new IrFunctionPrinter().print(function);
 
         return function;
     }
@@ -195,106 +197,6 @@ public class IrPhiGenerator {
         return lastPredecessorDefs.stream().findFirst();
     }
 
-    private void replaceOperandsWithPhiTargets(IrBlock block, HashSet<IrBlock> visitedBlocks) {
-         if (!visitedBlocks.add(block)) {
-             return;
-         }
-
-         for (IrInstruction instruction : block.getInstructions()) {
-             if (instruction instanceof IrPhi phi) {
-                 HashSet<IrBlock> processedBlocks = new HashSet<>();
-                 HashSet<SSAValue> valuesToReplace = phi.sources().stream().map(IrPhi.IrPhiItem::value)
-                         .collect(Collectors.toCollection(HashSet::new));
-                 replaceInBlock(block, processedBlocks, phi.target(), valuesToReplace);
-             }
-         }
-
-         for (IrBlock successor : block.getSuccessorBlocks()) {
-             replaceOperandsWithPhiTargets(successor, visitedBlocks);
-         }
-    }
-
-    private void replaceInBlock(IrBlock block, Set<IrBlock> processedBlocks, SSAValue newValue, Set<SSAValue> valuesToReplace) {
-        if (!processedBlocks.add(block) || valuesToReplace.isEmpty()) {
-            return;
-        }
-
-        for (IrInstruction instruction : block.getInstructions()) {
-            replaceOperands(instruction, newValue, valuesToReplace);
-
-            Optional<SSAValue> definedByInstruction = definesOperands(instruction, valuesToReplace);
-            if (definedByInstruction.isPresent()) {
-                valuesToReplace.remove(definedByInstruction.get());
-                if (valuesToReplace.isEmpty()) {
-                    return;
-                }
-            }
-        }
-
-        for (IrBlock successor : block.getSuccessorBlocks()) {
-            HashSet<SSAValue> succValuesToReplace = new HashSet<>(valuesToReplace);
-            replaceInBlock(successor, processedBlocks, newValue, succValuesToReplace);
-        }
-    }
-
-    private void replaceOperands(IrInstruction instruction, SSAValue newValue, Set<SSAValue> valuesToReplace) {
-        switch (instruction) {
-            case IrBinaryOperationInstruction binaryOperationInstruction:
-                if (valuesToReplace.contains(binaryOperationInstruction.leftSrc())) {
-                    binaryOperationInstruction.replaceLeftSrc(newValue);
-                }
-                if (valuesToReplace.contains(binaryOperationInstruction.rightSrc())) {
-                    binaryOperationInstruction.replaceRightSrc(newValue);
-                }
-                break;
-            case IrBranchInstruction irBranchInstruction:
-                if (valuesToReplace.contains(irBranchInstruction.conditionValue())) {
-                    irBranchInstruction.replaceConditionValue(newValue);
-                }
-                break;
-            case IrJumpInstruction _, IrIntConstantInstruction _, IrBoolConstantInstruction _:
-                break;
-            case IrReturnInstruction irReturnInstruction:
-                if (valuesToReplace.contains(irReturnInstruction.src())) {
-                    irReturnInstruction.replaceSrc(newValue);
-                }
-                break;
-            case IrMoveInstruction irMoveInstruction:
-                if (valuesToReplace.contains(irMoveInstruction.source())) {
-                    irMoveInstruction.replaceSource(newValue);
-                }
-                break;
-            case IrPhi irPhi:
-                break;
-            case IrUnaryOperationInstruction irUnaryOperationInstruction:
-                if (valuesToReplace.contains(irUnaryOperationInstruction.src())) {
-                    irUnaryOperationInstruction.replaceSrc(newValue);
-                }
-                break;
-        }
-    }
-
-    private Optional<SSAValue> definesOperands(IrInstruction instruction, Set<SSAValue> valuesToReplace) {
-        return switch (instruction) {
-            case IrBinaryOperationInstruction binaryOperationInstruction ->
-                    valuesToReplace.contains(binaryOperationInstruction.target())
-                            ? Optional.of(binaryOperationInstruction.target()) : Optional.empty();
-            case IrBoolConstantInstruction irBoolConstantInstruction ->
-                    valuesToReplace.contains(irBoolConstantInstruction.target())
-                            ? Optional.of(irBoolConstantInstruction.target()) : Optional.empty();
-            case IrIntConstantInstruction irIntConstantInstruction ->
-                    valuesToReplace.contains(irIntConstantInstruction.target()) ?
-                            Optional.of(irIntConstantInstruction.target()) : Optional.empty();
-            case IrMoveInstruction irMoveInstruction -> valuesToReplace.contains(irMoveInstruction.target())
-                    ? Optional.of(irMoveInstruction.target()) : Optional.empty();
-            case IrPhi irPhi -> valuesToReplace.contains(irPhi.target())
-                    ? Optional.of(irPhi.target()) : Optional.empty();
-            case IrUnaryOperationInstruction irUnaryOperationInstruction ->
-                    valuesToReplace.contains(irUnaryOperationInstruction.target())
-                            ? Optional.of(irUnaryOperationInstruction.target()) : Optional.empty();
-            case IrBranchInstruction _, IrJumpInstruction _, IrReturnInstruction _ -> Optional.empty();
-        };
-    }
 
     private void removeInvalidPhis(IrFunction function) {
         HashSet<IrBlock> visitedBlocks = new HashSet<>();
@@ -321,116 +223,222 @@ public class IrPhiGenerator {
         }
     }
 
-    private void renamePhiOperands(IrBlock startBlock,
-                                   IrBlock predecessorBlock,
-                                   Map<IrBlock, Set<IrBlock>> dominanceChildren,
-                                   Map<Symbol, Stack<SSAValue>> ssaValues) {
 
-        Map<Symbol, Integer> newSSAValuesCounters = new HashMap<>();
-        for (IrInstruction instruction : startBlock.getInstructions()) {
+    private void iteratePhis(IrFunction function, Map<IrBlock, Set<IrBlock>> dominanceChildren) {
+
+        Set<IrBlock> startBlockChildren = dominanceChildren.getOrDefault(function.startBlock(), Set.of());
+        for (IrBlock child : startBlockChildren) {
+            iteratePhis(child, dominanceChildren);
+        }
+    }
+
+    private void iteratePhis(IrBlock currentBlock, Map<IrBlock, Set<IrBlock>> dominanceChildren) {
+
+        List<IrPhi> phis = new ArrayList<>();
+        for (IrInstruction instruction : currentBlock.getInstructions()) {
             if (instruction instanceof IrPhi phi) {
-                for (IrPhi.IrPhiItem phiItem : phi.sources()) {
-                    if (phiItem.block() == predecessorBlock) {
-                        Symbol phiItemSymbol = phiItem.value().symbol().get();
-                        phiItem.changeValue(ssaValues.get(phiItemSymbol).peek());
-                    }
-                }
-
-                Symbol phiTargetSymbol = phi.target().symbol().get();
-                ssaValues.computeIfAbsent(phiTargetSymbol, _ -> new Stack<>()).push(phi.target());
-
-                if (newSSAValuesCounters.containsKey(phiTargetSymbol)) {
-                    newSSAValuesCounters.put(phiTargetSymbol, newSSAValuesCounters.get(phiTargetSymbol) + 1);
-                } else {
-                    newSSAValuesCounters.put(phiTargetSymbol, 1);
-                }
+                phis.add(phi);
             }
         }
 
+        for (IrPhi phi : phis) {
+            replacePhiOperands(currentBlock, phi);
+        }
+
+        Set<IrBlock> blockChildren = dominanceChildren.getOrDefault(currentBlock, Set.of());
+        for (IrBlock child : blockChildren) {
+            iteratePhis(child, dominanceChildren);
+        }
+    }
+
+    private void replacePhiOperands(IrBlock startBlock, IrPhi phi) {
+        HashSet<SSAValue> operandsToReplace = phi.sources()
+                .stream()
+                .map(IrPhi.IrPhiItem::value)
+                .collect(Collectors.toCollection(HashSet::new));
+
+        boolean phiFound = false;
         for (IrInstruction instruction : startBlock.getInstructions()) {
-            switch (instruction) {
-                case IrBinaryOperationInstruction binaryOperationInstruction:
-                    if (binaryOperationInstruction.leftSrc().symbol().isPresent()) {
-                        binaryOperationInstruction.replaceLeftSrc(
-                                ssaValues.get(binaryOperationInstruction.leftSrc().symbol().get()).peek());
-                    }
-                    if (binaryOperationInstruction.rightSrc().symbol().isPresent()) {
-                        binaryOperationInstruction.replaceRightSrc(
-                                ssaValues.get(binaryOperationInstruction.rightSrc().symbol().get()).peek());
-                    }
-                    if (binaryOperationInstruction.target().symbol().isPresent()) {
-                        Symbol targetSymbol = binaryOperationInstruction.target().symbol().get();
-                        ssaValues.computeIfAbsent(targetSymbol, _ -> new Stack<>())
-                                .push(binaryOperationInstruction.target());
+            if (!phiFound) {
+                 if (instruction == phi) {
+                     phiFound = true;
+                 }
+                continue;
+            }
 
-                        if (newSSAValuesCounters.containsKey(targetSymbol)) {
-                            newSSAValuesCounters.put(targetSymbol, newSSAValuesCounters.get(targetSymbol) + 1);
-                        } else {
-                            newSSAValuesCounters.put(targetSymbol, 1);
-                        }
-                    }
-                    break;
-                case IrBranchInstruction irBranchInstruction:
-                    if (irBranchInstruction.conditionValue().symbol().isPresent()) {
-                        irBranchInstruction.replaceConditionValue(
-                                ssaValues.get(irBranchInstruction.conditionValue().symbol().get()).peek());
-                    }
-                    break;
-                case IrReturnInstruction irReturnInstruction:
-                    if (irReturnInstruction.src().symbol().isPresent()) {
-                        irReturnInstruction.replaceSrc(
-                                ssaValues.get(irReturnInstruction.src().symbol().get()).peek());
-                    }
-                    break;
-                case IrMoveInstruction irMoveInstruction:
-                    if (irMoveInstruction.source().symbol().isPresent()) {
-                        irMoveInstruction.replaceSource(
-                                ssaValues.get(irMoveInstruction.source().symbol().get()).peek());
-                    }
-                    if (irMoveInstruction.target().symbol().isPresent()) {
-                        Symbol targetSymbol = irMoveInstruction.target().symbol().get();
 
-                        ssaValues.computeIfAbsent(targetSymbol, _ -> new Stack<>())
-                                .push(irMoveInstruction.target());
+            for (SSAValue operand : operandsToReplace) {
+                HashSet<SSAValue> updateOperandsToReplace = new HashSet<>(operandsToReplace);
 
-                        if (newSSAValuesCounters.containsKey(targetSymbol)) {
-                            newSSAValuesCounters.put(targetSymbol, newSSAValuesCounters.get(targetSymbol) + 1);
-                        } else {
-                            newSSAValuesCounters.put(targetSymbol, 1);
-                        }
-                    }
-                    break;
-                case IrUnaryOperationInstruction irUnaryOperationInstruction:
-                    if (irUnaryOperationInstruction.src().symbol().isPresent()) {
-                        irUnaryOperationInstruction.replaceSrc(
-                                ssaValues.get(irUnaryOperationInstruction.src().symbol().get()).peek());
-                    }
-                    if (irUnaryOperationInstruction.target().symbol().isPresent()) {
-                        Symbol targetSymbol = irUnaryOperationInstruction.target().symbol().get();
+                if (doesInstructionDefineSSAValue(instruction, operand)) {
+                    updateOperandsToReplace.remove(operand);
+                } else {
+                    replacePhiOperandInInstruction(instruction, phi.target(), operand, Optional.empty());
+                }
 
-                        ssaValues.computeIfAbsent(targetSymbol, _ -> new Stack<>())
-                                .push(irUnaryOperationInstruction.target());
 
-                        if (newSSAValuesCounters.containsKey(targetSymbol)) {
-                            newSSAValuesCounters.put(targetSymbol, newSSAValuesCounters.get(targetSymbol) + 1);
-                        } else {
-                            newSSAValuesCounters.put(targetSymbol, 1);
-                        }
-                    }
-                    break;
-                case IrJumpInstruction _, IrIntConstantInstruction _, IrBoolConstantInstruction _, IrPhi _:
-                    break;
+                operandsToReplace = updateOperandsToReplace;
             }
         }
 
-        for (IrBlock dominatorChild : dominanceChildren.getOrDefault(startBlock, Set.of())) {
-            renamePhiOperands(dominatorChild, startBlock, dominanceChildren, ssaValues);
+        HashSet<BlockVisitingPair> visitedBlocks = new HashSet<>();
+        visitedBlocks.add(new BlockVisitingPair(startBlock, startBlock));
+        for (IrBlock successor : startBlock.getSuccessorBlocks()) {
+            replacePhiOperands(successor, startBlock, visitedBlocks, phi.target(), operandsToReplace);
+        }
+    }
+
+    private void replacePhiOperands(IrBlock block, IrBlock comingFrom, HashSet<BlockVisitingPair> visitedBlocks, SSAValue newOperand, HashSet<SSAValue> operandsToReplace) {
+        if (!visitedBlocks.add(new BlockVisitingPair(block, comingFrom))) {
+            return;
         }
 
-        for (Map.Entry<Symbol, Integer> entry : newSSAValuesCounters.entrySet()) {
-            for (int i = 0; i < entry.getValue(); i++) {
-                ssaValues.get(entry.getKey()).pop();
+        HashSet<SSAValue> remainingOperandsToReplace = new HashSet<>(operandsToReplace);
+
+        for (IrInstruction instruction : block.getInstructions()) {
+
+            // This a guard that prevents phis from overriding their own operands
+            if (doesInstructionDefineSSAValue(instruction, newOperand)) {
+                remainingOperandsToReplace.clear();
+                return;
             }
+
+            for (SSAValue operand : remainingOperandsToReplace) {
+                HashSet<SSAValue> updateOperandsToReplace = new HashSet<>(remainingOperandsToReplace);
+
+                if (doesInstructionDefineSSAValue(instruction, operand)) {
+                    updateOperandsToReplace.remove(operand);
+                } else {
+                    boolean replaced = replacePhiOperandInInstruction(instruction, newOperand, operand, Optional.of(comingFrom));
+                    if (replaced && instruction instanceof IrPhi phi) {
+                        updateOperandsToReplace.remove(operand);
+                        // Add phi to be recomputed
+                    }
+                }
+
+
+                remainingOperandsToReplace = updateOperandsToReplace;
+            }
+        }
+
+        if (remainingOperandsToReplace.isEmpty()) {
+            return;
+        }
+
+        for (IrBlock successor : block.getSuccessorBlocks()) {
+            replacePhiOperands(successor, block, visitedBlocks, newOperand, remainingOperandsToReplace);
+        }
+    }
+
+    private boolean replacePhiOperandInInstruction(IrInstruction instruction, SSAValue newOperand, SSAValue operandToReplace, Optional<IrBlock> comingFromFilter) {
+        boolean replaced = false;
+        switch (instruction) {
+            case IrBinaryOperationInstruction binaryOperationInstruction:
+                if (operandToReplace == binaryOperationInstruction.leftSrc()) {
+                    binaryOperationInstruction.replaceLeftSrc(newOperand);
+                    replaced = true;
+                }
+                if (operandToReplace == binaryOperationInstruction.rightSrc()) {
+                    binaryOperationInstruction.replaceRightSrc(newOperand);
+                    replaced = true;
+                }
+                break;
+            case IrBranchInstruction irBranchInstruction:
+                if (operandToReplace == irBranchInstruction.conditionValue()) {
+                    irBranchInstruction.replaceConditionValue(newOperand);
+                    replaced = true;
+                }
+                break;
+            case IrJumpInstruction _, IrIntConstantInstruction _, IrBoolConstantInstruction _:
+                break;
+            case IrReturnInstruction irReturnInstruction:
+                if (operandToReplace == irReturnInstruction.src()) {
+                    irReturnInstruction.replaceSrc(newOperand);
+                    replaced = true;
+                }
+                break;
+            case IrMoveInstruction irMoveInstruction:
+                if (operandToReplace == irMoveInstruction.source()) {
+                    irMoveInstruction.replaceSource(newOperand);
+                    replaced = true;
+                }
+                break;
+            case IrPhi irPhi:
+                for (IrPhi.IrPhiItem phiItem : irPhi.sources()) {
+                    if (comingFromFilter.isPresent() && phiItem.block() != comingFromFilter.get()) {
+                        // Only replaces operand in phi if coming from the correct predecessor
+                        continue;
+                    }
+
+                    if (operandToReplace == phiItem.value()) {
+                        phiItem.changeValue(newOperand);
+                        replaced = true;
+                    }
+                }
+                break;
+            case IrUnaryOperationInstruction irUnaryOperationInstruction:
+                if (operandToReplace == irUnaryOperationInstruction.src()) {
+                    irUnaryOperationInstruction.replaceSrc(newOperand);
+                    replaced = true;
+                }
+                break;
+        }
+        return replaced;
+    }
+
+    private boolean doesInstructionDefineSSAValue(IrInstruction instruction, SSAValue ssaValue) {
+        if (instruction instanceof IrValueProducingInstruction valueProducingInstruction) {
+            return valueProducingInstruction.target() == ssaValue;
+        }
+        return false;
+    }
+
+
+    record BlockVisitingPair(IrBlock block, IrBlock comingFrom) { }
+
+    private void removeTrivialPhis(IrFunction function, Map<IrBlock, Set<IrBlock>> dominanceChildren) {
+        Set<IrBlock> startBlockChildren = dominanceChildren.getOrDefault(function.startBlock(), Set.of());
+        for (IrBlock child : startBlockChildren) {
+            removeTrivialPhis(child, dominanceChildren);
+        }
+    }
+
+    private void removeTrivialPhis(IrBlock currentBlock, Map<IrBlock, Set<IrBlock>> dominanceChildren) {
+        List<IrPhi> phis = new ArrayList<>();
+        for (IrInstruction instruction : currentBlock.getInstructions()) {
+            if (instruction instanceof IrPhi phi) {
+                phis.add(phi);
+            }
+        }
+
+        for (IrPhi phi : phis) {
+            if (phi.isTrivialPhi()) {
+                currentBlock.removeInstruction(phi);
+                Optional<SSAValue> singlePhiOperand = phi.getTrivialOperandOrThrow();
+                if (singlePhiOperand.isPresent()) {
+                    HashSet<IrBlock> visitedBlocks = new HashSet<>();
+                    replaceAllOperandOccurrences(currentBlock, visitedBlocks, singlePhiOperand.get(), phi.target());
+                }
+            }
+        }
+
+        Set<IrBlock> blockChildren = dominanceChildren.getOrDefault(currentBlock, Set.of());
+        for (IrBlock child : blockChildren) {
+            iteratePhis(child, dominanceChildren);
+        }
+    }
+
+    private void replaceAllOperandOccurrences(IrBlock currentBlock, Set<IrBlock> visitedBlocks, SSAValue newOperand, SSAValue operandToReplace) {
+        if (!visitedBlocks.add(currentBlock)) {
+            return;
+        }
+
+        for (IrInstruction instruction : currentBlock.getInstructions()) {
+            replacePhiOperandInInstruction(instruction, newOperand, operandToReplace, Optional.empty());
+        }
+
+        for (IrBlock successor : currentBlock.getSuccessorBlocks()) {
+            replaceAllOperandOccurrences(successor, visitedBlocks, newOperand, operandToReplace);
         }
     }
 

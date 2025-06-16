@@ -3,12 +3,35 @@ package edu.kit.kastel.vads.compiler.ir.ValueProducingInstructions;
 import edu.kit.kastel.vads.compiler.ir.IrBlock;
 import edu.kit.kastel.vads.compiler.ir.SSAValue;
 
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public record IrPhi(
         SSAValue target,
         List<IrPhiItem> sources) implements IrValueProducingInstruction {
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(target);
+    }
+
+    public boolean isTrivialPhi() {
+        return !sources.isEmpty()
+                && sources.stream().map(s -> s.value).distinct().count() == 1;
+    }
+
+    public Optional<SSAValue> getTrivialOperandOrThrow() {
+        if (sources.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Set<SSAValue> values = sources.stream().map(s -> s.value).distinct().collect(Collectors.toSet());
+        if (values.size() >= 2) {
+            throw new IllegalStateException("Can not determine single phi operand of non-trivial phi");
+        }
+
+        return values.stream().findAny();
+    }
 
     public static final class IrPhiItem {
         private SSAValue value;
