@@ -97,18 +97,20 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
 
         context.newCurrentBlock(elseBlock);
         SSAConstructionResult elseResult = conditionalExpression.elseExpression().accept(this, context);
-        generateJumpInstruction(context.currentBlock(), fBlock);
+        IrBlock elseBranchLastBlock = context.currentBlock();
+        generateJumpInstruction(elseBranchLastBlock, fBlock);
 
         context.newCurrentBlock(thenBlock);
         SSAConstructionResult thenResult = conditionalExpression.thenExpression().accept(this, context);
-        generateJumpInstruction(context.currentBlock(), fBlock);
+        IrBlock thenBranchLastBlock = context.currentBlock();
+        generateJumpInstruction(thenBranchLastBlock, fBlock);
 
         context.newCurrentBlock(fBlock);
         IrPhi phi = new IrPhi(
                 context.generateNewSSAValue(context.currentBlock()),
                 List.of(
-                        new IrPhi.IrPhiItem(elseResult.asSSAValue(), elseBlock),
-                        new IrPhi.IrPhiItem(thenResult.asSSAValue(), thenBlock)
+                        new IrPhi.IrPhiItem(elseResult.asSSAValue(), elseBranchLastBlock),
+                        new IrPhi.IrPhiItem(thenResult.asSSAValue(), thenBranchLastBlock)
                 ));
         context.currentBlock().addInstruction(phi);
 
