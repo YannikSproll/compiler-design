@@ -11,7 +11,7 @@ public final class SSAValueGenerator {
         ssaValueNameCounter = 0;
     }
 
-    public SSAValue generateNewSSAValue(Optional<Symbol> symbol) {
-        return new SSAValue("%" + ssaValueNameCounter++, symbol);
+    public SSAValue generateNewSSAValue(IrType type, Optional<Symbol> symbol) {
+        return new SSAValue("%" + ssaValueNameCounter++, type, symbol);
     }
 }

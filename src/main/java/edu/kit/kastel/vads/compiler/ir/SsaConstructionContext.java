@@ -1,5 +1,6 @@
 package edu.kit.kastel.vads.compiler.ir;
 
+import edu.kit.kastel.vads.compiler.frontend.semantic.hir.HirType;
 import edu.kit.kastel.vads.compiler.frontend.semantic.hir.Symbol;
 
 import java.util.*;
@@ -54,14 +55,14 @@ public class SsaConstructionContext {
         return blocks;
     }
 
-    public SSAValue generateNewSSAValue(IrBlock definingBlock) {
-        SSAValue newValue = ssaValueGenerator.generateNewSSAValue(Optional.empty());
+    public SSAValue generateNewSSAValue(HirType type, IrBlock definingBlock) {
+        SSAValue newValue = ssaValueGenerator.generateNewSSAValue(IrType.from(type), Optional.empty());
         globalVariableNameRecording.introduceNewSSAValue(newValue, definingBlock);
         return newValue;
     }
 
     public SSAValue generateNewSSAValue(Symbol symbol, IrBlock definingBlock) {
-        SSAValue newValue =  ssaValueGenerator.generateNewSSAValue(Optional.of(symbol));
+        SSAValue newValue =  ssaValueGenerator.generateNewSSAValue(IrType.from(symbol.type()), Optional.of(symbol));
         globalVariableNameRecording.introduceNewSSAValue(newValue, definingBlock);
         return newValue;
     }

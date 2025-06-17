@@ -8,10 +8,12 @@ import java.util.Optional;
 
 public final class SSAValue {
     private final String name;
+    private final IrType type;
     private final @Nullable Symbol symbol;
 
-    public SSAValue(String name, Optional<Symbol> symbol) {
+    public SSAValue(String name, IrType type, Optional<Symbol> symbol) {
         this.name = name;
+        this.type = type;
         this.symbol = symbol.orElse(null);
     }
 
@@ -22,11 +24,14 @@ public final class SSAValue {
     public Optional<Symbol> symbol() {
         return Optional.ofNullable(symbol);
     }
+
+    public IrType type() { return type; }
+
     public String formatName() {
         if (symbol == null) {
-            return name;
+            return name + ":" + type;
         } else {
-            return name + " (" + symbol.name() + ")";
+            return name + ":" + type + " (" + symbol.name() + ")";
         }
     }
 
@@ -35,12 +40,13 @@ public final class SSAValue {
         if (obj == this) return true;
         if (obj == null || obj.getClass() != this.getClass()) return false;
         var that = (SSAValue) obj;
-        return Objects.equals(this.name, that.name);
+        return Objects.equals(this.name, that.name)
+                && Objects.equals(this.type, that.type);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name);
+        return Objects.hash(name, type);
     }
 
     @Override

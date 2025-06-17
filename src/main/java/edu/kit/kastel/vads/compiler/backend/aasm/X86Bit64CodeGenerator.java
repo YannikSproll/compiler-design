@@ -4,6 +4,7 @@ import edu.kit.kastel.vads.compiler.backend.regalloc.Register;
 import edu.kit.kastel.vads.compiler.ir.IrBranchInstruction;
 import edu.kit.kastel.vads.compiler.ir.IrJumpInstruction;
 import edu.kit.kastel.vads.compiler.ir.IrReturnInstruction;
+import edu.kit.kastel.vads.compiler.ir.IrType;
 import edu.kit.kastel.vads.compiler.ir.ValueProducingInstructions.*;
 
 public class X86Bit64CodeGenerator implements CodeGenerator {
@@ -41,7 +42,7 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         instructionGenerator.generateIntConstInstruction(
                 allocationResult.nodeToRegisterMapping().get(instruction.target()),
                 instruction.constValue(),
-                BitSize.BIT_32);
+                getBitSize(instruction.target().type()));
     }
 
     @Override
@@ -51,7 +52,7 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         instructionGenerator.generateIntConstInstruction(
                 allocationResult.nodeToRegisterMapping().get(instruction.target()),
                 instruction.constValue() ? 1 : 0,
-                BitSize.BIT_8);
+                getBitSize(instruction.target().type()));
     }
 
     @Override
@@ -62,7 +63,7 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
                 allocationResult,
                 allocationResult.nodeToRegisterMapping().get(instruction.source()),
                 allocationResult.nodeToRegisterMapping().get(instruction.target()),
-                BitSize.BIT_32);
+                getBitSize(instruction.target().type()));
     }
 
     private void generateMove(RegisterAllocationResult allocationResult, Register sourceRegister, Register targetRegister, BitSize bitSize) {
@@ -86,19 +87,20 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
+        BitSize bitSize = getBitSize(instruction.target().type());
         if (targetRegister instanceof StackSlot) {
-            instructionGenerator.generateMoveInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateAdditionInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
+            instructionGenerator.generateMoveInstruction(rightOperandRegister, allocationResult.tempRegister(), bitSize)
+                    .generateAdditionInstruction(leftOperandRegister, allocationResult.tempRegister(), bitSize)
+                    .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, bitSize);
 
         } else {
             if (rightOperandRegister == targetRegister) {
-                instructionGenerator.generateAdditionInstruction(leftOperandRegister, targetRegister, BitSize.BIT_32);
+                instructionGenerator.generateAdditionInstruction(leftOperandRegister, targetRegister, bitSize);
             } else if (leftOperandRegister == targetRegister) {
-                instructionGenerator.generateAdditionInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
+                instructionGenerator.generateAdditionInstruction(rightOperandRegister, targetRegister, bitSize);
             } else {
-                instructionGenerator.generateMoveInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32)
-                        .generateAdditionInstruction(leftOperandRegister, targetRegister, BitSize.BIT_32);
+                instructionGenerator.generateMoveInstruction(rightOperandRegister, targetRegister, bitSize)
+                        .generateAdditionInstruction(leftOperandRegister, targetRegister, bitSize);
             }
         }
     }
@@ -111,20 +113,21 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
+        BitSize bitSize = getBitSize(instruction.target().type());
         if (targetRegister instanceof StackSlot) {
-            instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateSubtractionInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
+            instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), bitSize)
+                    .generateSubtractionInstruction(rightOperandRegister, allocationResult.tempRegister(), bitSize)
+                    .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, bitSize);
         } else {
             if (rightOperandRegister == targetRegister) {
-                instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                        .generateSubtractionInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                        .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
+                instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), bitSize)
+                        .generateSubtractionInstruction(rightOperandRegister, allocationResult.tempRegister(), bitSize)
+                        .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, bitSize);
             } else if (leftOperandRegister == targetRegister) {
-                instructionGenerator.generateSubtractionInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
+                instructionGenerator.generateSubtractionInstruction(rightOperandRegister, targetRegister, bitSize);
             } else {
-                instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister, BitSize.BIT_32)
-                        .generateSubtractionInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
+                instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister, bitSize)
+                        .generateSubtractionInstruction(rightOperandRegister, targetRegister, bitSize);
             }
         }
     }
@@ -137,19 +140,20 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
+        BitSize bitSize = getBitSize(instruction.target().type());
         if (targetRegister instanceof StackSlot) {
-            instructionGenerator.generateMoveInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateMultiplicationInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
+            instructionGenerator.generateMoveInstruction(rightOperandRegister, allocationResult.tempRegister(), bitSize)
+                    .generateMultiplicationInstruction(leftOperandRegister, allocationResult.tempRegister(), bitSize)
+                    .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, bitSize);
 
         } else {
             if (rightOperandRegister == targetRegister) {
-                instructionGenerator.generateMultiplicationInstruction(leftOperandRegister, targetRegister, BitSize.BIT_32);
+                instructionGenerator.generateMultiplicationInstruction(leftOperandRegister, targetRegister, bitSize);
             } else if (leftOperandRegister == targetRegister) {
-                instructionGenerator.generateMultiplicationInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
+                instructionGenerator.generateMultiplicationInstruction(rightOperandRegister, targetRegister, bitSize);
             } else {
-                instructionGenerator.generateMoveInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32)
-                        .generateMultiplicationInstruction(leftOperandRegister, targetRegister, BitSize.BIT_32);
+                instructionGenerator.generateMoveInstruction(rightOperandRegister, targetRegister, bitSize)
+                        .generateMultiplicationInstruction(leftOperandRegister, targetRegister, bitSize);
             }
         }
     }
@@ -158,22 +162,24 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
     public void generateDiv(CodeGenerationContext generationContext, IrDivInstruction instruction) {
         RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
 
+        BitSize bitSize = getBitSize(instruction.target().type());
         instructionGenerator
-                .generateMoveInstruction(allocationResult.nodeToRegisterMapping().get(instruction.leftSrc()), X86Register.REG_AX, BitSize.BIT_32)
+                .generateMoveInstruction(allocationResult.nodeToRegisterMapping().get(instruction.leftSrc()), X86Register.REG_AX, bitSize)
                 .generateSignExtendInstruction(BitSize.BIT_32)
-                .generateIntegerDivisionInstruction(allocationResult.nodeToRegisterMapping().get(instruction.rightSrc()), BitSize.BIT_32)
-                .generateMoveInstruction(X86Register.REG_AX, allocationResult.nodeToRegisterMapping().get(instruction.target()), BitSize.BIT_32);
+                .generateIntegerDivisionInstruction(allocationResult.nodeToRegisterMapping().get(instruction.rightSrc()), bitSize)
+                .generateMoveInstruction(X86Register.REG_AX, allocationResult.nodeToRegisterMapping().get(instruction.target()), bitSize);
     }
 
     @Override
     public void generateMod(CodeGenerationContext generationContext, IrModInstruction instruction) {
         RegisterAllocationResult allocationResult = generationContext.registerAllocationResult();
 
+        BitSize bitSize = getBitSize(instruction.target().type());
         instructionGenerator
-                .generateMoveInstruction(allocationResult.nodeToRegisterMapping().get(instruction.leftSrc()), X86Register.REG_AX, BitSize.BIT_32)
+                .generateMoveInstruction(allocationResult.nodeToRegisterMapping().get(instruction.leftSrc()), X86Register.REG_AX, bitSize)
                 .generateSignExtendInstruction(BitSize.BIT_32)
-                .generateIntegerDivisionInstruction(allocationResult.nodeToRegisterMapping().get(instruction.rightSrc()), BitSize.BIT_32)
-                .generateMoveInstruction(X86Register.REG_DX, allocationResult.nodeToRegisterMapping().get(instruction.target()), BitSize.BIT_32);
+                .generateIntegerDivisionInstruction(allocationResult.nodeToRegisterMapping().get(instruction.rightSrc()), bitSize)
+                .generateMoveInstruction(X86Register.REG_DX, allocationResult.nodeToRegisterMapping().get(instruction.target()), bitSize);
     }
 
     @Override
@@ -184,17 +190,18 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register shiftCountRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
+        BitSize bitSize = getBitSize(instruction.target().type());
         if (shiftCountRegister != X86Register.REG_CX) {
-            generateMove(allocationResult, shiftCountRegister, X86Register.REG_CX, BitSize.BIT_32);
+            generateMove(allocationResult, shiftCountRegister, X86Register.REG_CX, bitSize);
         }
 
         if (targetRegister instanceof StackSlot) {
-            instructionGenerator.generateMoveInstruction(valueRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateLeftShiftInstruction(X86Register.REG_CX, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
+            instructionGenerator.generateMoveInstruction(valueRegister, allocationResult.tempRegister(), bitSize)
+                    .generateLeftShiftInstruction(X86Register.REG_CX, allocationResult.tempRegister(), bitSize)
+                    .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, bitSize);
         } else {
-            generateMove(allocationResult, valueRegister, targetRegister, BitSize.BIT_32);
-            instructionGenerator.generateLeftShiftInstruction(X86Register.REG_CX, targetRegister, BitSize.BIT_32);
+            generateMove(allocationResult, valueRegister, targetRegister, bitSize);
+            instructionGenerator.generateLeftShiftInstruction(X86Register.REG_CX, targetRegister, bitSize);
         }
     }
 
@@ -206,17 +213,18 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register shiftCountRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
+        BitSize bitSize = getBitSize(instruction.target().type());
         if (shiftCountRegister != X86Register.REG_CX) {
-            generateMove(allocationResult, shiftCountRegister, X86Register.REG_CX, BitSize.BIT_32);
+            generateMove(allocationResult, shiftCountRegister, X86Register.REG_CX, bitSize);
         }
 
         if (targetRegister instanceof StackSlot) {
-            instructionGenerator.generateMoveInstruction(valueRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateRightShiftInstruction(X86Register.REG_CX, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
+            instructionGenerator.generateMoveInstruction(valueRegister, allocationResult.tempRegister(), bitSize)
+                    .generateRightShiftInstruction(X86Register.REG_CX, allocationResult.tempRegister(), bitSize)
+                    .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, bitSize);
         } else {
-            generateMove(allocationResult, valueRegister, targetRegister, BitSize.BIT_32);
-            instructionGenerator.generateRightShiftInstruction(X86Register.REG_CX, targetRegister, BitSize.BIT_32);
+            generateMove(allocationResult, valueRegister, targetRegister, bitSize);
+            instructionGenerator.generateRightShiftInstruction(X86Register.REG_CX, targetRegister, bitSize);
         }
     }
 
@@ -228,20 +236,21 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
+        BitSize bitSize = getBitSize(instruction.target().type());
         if (targetRegister instanceof StackSlot) {
-            instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateBitwiseAndInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
+            instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), bitSize)
+                    .generateBitwiseAndInstruction(rightOperandRegister, allocationResult.tempRegister(), bitSize)
+                    .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, bitSize);
         } else {
             if (rightOperandRegister == targetRegister) {
-                instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                        .generateBitwiseAndInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                        .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
+                instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), bitSize)
+                        .generateBitwiseAndInstruction(rightOperandRegister, allocationResult.tempRegister(), bitSize)
+                        .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, bitSize);
             } else if (leftOperandRegister == targetRegister) {
-                instructionGenerator.generateBitwiseAndInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
+                instructionGenerator.generateBitwiseAndInstruction(rightOperandRegister, targetRegister, bitSize);
             } else {
-                instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister, BitSize.BIT_32)
-                        .generateBitwiseAndInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
+                instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister, bitSize)
+                        .generateBitwiseAndInstruction(rightOperandRegister, targetRegister, bitSize);
             }
         }
     }
@@ -254,20 +263,21 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
+        BitSize bitSize = getBitSize(instruction.target().type());
         if (targetRegister instanceof StackSlot) {
-            instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateBitwiseOrInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
+            instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), bitSize)
+                    .generateBitwiseOrInstruction(rightOperandRegister, allocationResult.tempRegister(), bitSize)
+                    .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, bitSize);
         } else {
             if (rightOperandRegister == targetRegister) {
-                instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                        .generateBitwiseOrInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                        .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
+                instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), bitSize)
+                        .generateBitwiseOrInstruction(rightOperandRegister, allocationResult.tempRegister(), bitSize)
+                        .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, bitSize);
             } else if (leftOperandRegister == targetRegister) {
-                instructionGenerator.generateBitwiseOrInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
+                instructionGenerator.generateBitwiseOrInstruction(rightOperandRegister, targetRegister, bitSize);
             } else {
-                instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister, BitSize.BIT_32)
-                        .generateBitwiseOrInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
+                instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister, bitSize)
+                        .generateBitwiseOrInstruction(rightOperandRegister, targetRegister, bitSize);
             }
         }
     }
@@ -279,11 +289,12 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register sourceValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.src());
         Register targetValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
+        BitSize bitSize = getBitSize(instruction.target().type());
         if (sourceValueRegister != targetValueRegister) {
-            instructionGenerator.generateMoveInstruction(sourceValueRegister, targetValueRegister, BitSize.BIT_32);
+            instructionGenerator.generateMoveInstruction(sourceValueRegister, targetValueRegister, bitSize);
         }
 
-        instructionGenerator.generateBitwiseNotInstruction(targetValueRegister, BitSize.BIT_32);
+        instructionGenerator.generateBitwiseNotInstruction(targetValueRegister, bitSize);
     }
 
     @Override
@@ -294,20 +305,21 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
+        BitSize bitSize = getBitSize(instruction.target().type());
         if (targetRegister instanceof StackSlot) {
-            instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateBitwiseXorInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
+            instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), bitSize)
+                    .generateBitwiseXorInstruction(rightOperandRegister, allocationResult.tempRegister(), bitSize)
+                    .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, bitSize);
         } else {
             if (rightOperandRegister == targetRegister) {
-                instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                        .generateBitwiseXorInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                        .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, BitSize.BIT_32);
+                instructionGenerator.generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), bitSize)
+                        .generateBitwiseXorInstruction(rightOperandRegister, allocationResult.tempRegister(), bitSize)
+                        .generateMoveInstruction(allocationResult.tempRegister(), targetRegister, bitSize);
             } else if (leftOperandRegister == targetRegister) {
-                instructionGenerator.generateBitwiseXorInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
+                instructionGenerator.generateBitwiseXorInstruction(rightOperandRegister, targetRegister, bitSize);
             } else {
-                instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister, BitSize.BIT_32)
-                        .generateBitwiseXorInstruction(rightOperandRegister, targetRegister, BitSize.BIT_32);
+                instructionGenerator.generateMoveInstruction(leftOperandRegister, targetRegister, bitSize)
+                        .generateBitwiseXorInstruction(rightOperandRegister, targetRegister, bitSize);
             }
         }
     }
@@ -320,15 +332,16 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
+        BitSize bitSize = getBitSize(instruction.leftSrc().type());
         if (leftOperandRegister instanceof StackSlot
             && rightOperandRegister instanceof StackSlot) {
             instructionGenerator
-                    .generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateComparisonInstruction(allocationResult.tempRegister(), rightOperandRegister, BitSize.BIT_32)
+                    .generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), bitSize)
+                    .generateComparisonInstruction(allocationResult.tempRegister(), rightOperandRegister, bitSize)
                     .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.EQUAL);
         } else {
             instructionGenerator
-                    .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, BitSize.BIT_32)
+                    .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, bitSize)
                     .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.EQUAL);
         }
 
@@ -342,15 +355,16 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
+        BitSize bitSize = getBitSize(instruction.leftSrc().type());
         if (leftOperandRegister instanceof StackSlot
                 && rightOperandRegister instanceof StackSlot) {
             instructionGenerator
-                    .generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateComparisonInstruction(allocationResult.tempRegister(), rightOperandRegister, BitSize.BIT_32)
+                    .generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), bitSize)
+                    .generateComparisonInstruction(allocationResult.tempRegister(), rightOperandRegister, bitSize)
                     .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.NOT_EQUAL);
         } else {
             instructionGenerator
-                    .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, BitSize.BIT_32)
+                    .generateComparisonInstruction(leftOperandRegister, rightOperandRegister, bitSize)
                     .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.NOT_EQUAL);
         }
     }
@@ -363,15 +377,16 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
+        BitSize bitSize = getBitSize(instruction.leftSrc().type());
         if (leftOperandRegister instanceof StackSlot
                 && rightOperandRegister instanceof StackSlot) {
             instructionGenerator
-                    .generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateComparisonInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), bitSize)
+                    .generateComparisonInstruction(rightOperandRegister, allocationResult.tempRegister(), bitSize)
                     .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.GREATER_THAN);
         } else {
             instructionGenerator
-                    .generateComparisonInstruction(rightOperandRegister, leftOperandRegister, BitSize.BIT_32)
+                    .generateComparisonInstruction(rightOperandRegister, leftOperandRegister, bitSize)
                     .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.GREATER_THAN);
         }
 
@@ -385,15 +400,16 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
+        BitSize bitSize = getBitSize(instruction.leftSrc().type());
         if (leftOperandRegister instanceof StackSlot
                 && rightOperandRegister instanceof StackSlot) {
             instructionGenerator
-                    .generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateComparisonInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), bitSize)
+                    .generateComparisonInstruction(rightOperandRegister, allocationResult.tempRegister(), bitSize)
                     .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.LESS_THAN);
         } else {
             instructionGenerator
-                    .generateComparisonInstruction(rightOperandRegister, leftOperandRegister, BitSize.BIT_32)
+                    .generateComparisonInstruction(rightOperandRegister, leftOperandRegister, bitSize)
                     .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.LESS_THAN);
         }
     }
@@ -406,15 +422,16 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
+        BitSize bitSize = getBitSize(instruction.leftSrc().type());
         if (leftOperandRegister instanceof StackSlot
                 && rightOperandRegister instanceof StackSlot) {
             instructionGenerator
-                    .generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateComparisonInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), bitSize)
+                    .generateComparisonInstruction(rightOperandRegister, allocationResult.tempRegister(), bitSize)
                     .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.GREATER_THAN_OR_EQUAL);
         } else {
             instructionGenerator
-                    .generateComparisonInstruction(rightOperandRegister, leftOperandRegister, BitSize.BIT_32)
+                    .generateComparisonInstruction(rightOperandRegister, leftOperandRegister, bitSize)
                     .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.GREATER_THAN_OR_EQUAL);
         }
 
@@ -428,15 +445,16 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
+        BitSize bitSize = getBitSize(instruction.leftSrc().type());
         if (leftOperandRegister instanceof StackSlot
                 && rightOperandRegister instanceof StackSlot) {
             instructionGenerator
-                    .generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
-                    .generateComparisonInstruction(rightOperandRegister, allocationResult.tempRegister(), BitSize.BIT_32)
+                    .generateMoveInstruction(leftOperandRegister, allocationResult.tempRegister(), bitSize)
+                    .generateComparisonInstruction(rightOperandRegister, allocationResult.tempRegister(), bitSize)
                     .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.LESS_THAN_OR_EQUAL);
         } else {
             instructionGenerator
-                    .generateComparisonInstruction(rightOperandRegister, leftOperandRegister, BitSize.BIT_32)
+                    .generateComparisonInstruction(rightOperandRegister, leftOperandRegister, bitSize)
                     .generateSetConditionCodeInstruction(targetRegister, X86ConditionCode.LESS_THAN_OR_EQUAL);
         }
 
@@ -449,11 +467,12 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register sourceValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.src());
         Register targetValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
+        BitSize bitSize = getBitSize(instruction.target().type());
         if (sourceValueRegister != targetValueRegister) {
-            instructionGenerator.generateMoveInstruction(sourceValueRegister, targetValueRegister, BitSize.BIT_32);
+            instructionGenerator.generateMoveInstruction(sourceValueRegister, targetValueRegister, bitSize);
         }
 
-        instructionGenerator.generateNegationInstruction(targetValueRegister, BitSize.BIT_32);
+        instructionGenerator.generateNegationInstruction(targetValueRegister, bitSize);
     }
 
     @Override
@@ -463,8 +482,9 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register sourceValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.src());
         Register targetValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
-        generateMove(allocationResult, sourceValueRegister, targetValueRegister, BitSize.BIT_8);
-        instructionGenerator.generateComparisonInstruction(new IntegerConstantParameter(0), targetValueRegister, BitSize.BIT_8)
+        BitSize bitSize = getBitSize(instruction.target().type());
+        generateMove(allocationResult, sourceValueRegister, targetValueRegister, bitSize);
+        instructionGenerator.generateComparisonInstruction(new IntegerConstantParameter(0), targetValueRegister, bitSize)
                 .generateSetConditionCodeInstruction(targetValueRegister, X86ConditionCode.EQUAL);
     }
 
@@ -474,7 +494,7 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
 
         Register returnValueRegister = allocationResult.nodeToRegisterMapping().get(instruction.src());
         if (returnValueRegister != X86Register.REG_AX) {
-            instructionGenerator.generateMoveInstruction(returnValueRegister, X86Register.REG_AX, BitSize.BIT_32);
+            instructionGenerator.generateMoveInstruction(returnValueRegister, X86Register.REG_AX, getBitSize(instruction.src().type()));
         }
 
         int numberOfStackSlots = (int) allocationResult.registers().stream().filter(x -> x instanceof StackSlot).count();
@@ -507,7 +527,7 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
             Register conditionValueRegister = generationContext.registerAllocationResult()
                     .nodeToRegisterMapping().get(instruction.conditionValue());
             instructionGenerator
-                    .generateComparisonInstruction(new IntegerConstantParameter(1), conditionValueRegister, BitSize.BIT_8)
+                    .generateComparisonInstruction(new IntegerConstantParameter(1), conditionValueRegister, getBitSize(instruction.conditionValue().type()))
                     .generateConditionalJumpInstruction(X86ConditionCode.EQUAL, instruction.trueTarget().name(), BitSize.BIT_64)
                     .generateUnconditionalJumpInstruction(instruction.falseTarget().name(), BitSize.BIT_64);
         }
@@ -530,6 +550,13 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
             case IrLessThanOrEqualInstruction _ -> X86ConditionCode.LESS_THAN_OR_EQUAL;
             case IrGreaterThanOrEqualInstruction _ -> X86ConditionCode.GREATER_THAN_OR_EQUAL;
             default -> throw new IllegalStateException("Unexpected value: " + comparisonInstruction);
+        };
+    }
+
+    private static BitSize getBitSize(IrType type) {
+        return switch (type) {
+            case BOOL -> BitSize.BIT_8;
+            case I32 -> BitSize.BIT_32;
         };
     }
 
