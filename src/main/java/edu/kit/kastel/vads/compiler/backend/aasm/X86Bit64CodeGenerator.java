@@ -332,7 +332,7 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
-        BitSize bitSize = getBitSize(instruction.target().type());
+        BitSize bitSize = getBitSize(instruction.leftSrc().type());
         if (leftOperandRegister instanceof StackSlot
             && rightOperandRegister instanceof StackSlot) {
             instructionGenerator
@@ -355,7 +355,7 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
-        BitSize bitSize = getBitSize(instruction.target().type());
+        BitSize bitSize = getBitSize(instruction.leftSrc().type());
         if (leftOperandRegister instanceof StackSlot
                 && rightOperandRegister instanceof StackSlot) {
             instructionGenerator
@@ -377,7 +377,7 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
-        BitSize bitSize = getBitSize(instruction.target().type());
+        BitSize bitSize = getBitSize(instruction.leftSrc().type());
         if (leftOperandRegister instanceof StackSlot
                 && rightOperandRegister instanceof StackSlot) {
             instructionGenerator
@@ -400,7 +400,7 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
-        BitSize bitSize = getBitSize(instruction.target().type());
+        BitSize bitSize = getBitSize(instruction.leftSrc().type());
         if (leftOperandRegister instanceof StackSlot
                 && rightOperandRegister instanceof StackSlot) {
             instructionGenerator
@@ -422,7 +422,7 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
-        BitSize bitSize = getBitSize(instruction.target().type());
+        BitSize bitSize = getBitSize(instruction.leftSrc().type());
         if (leftOperandRegister instanceof StackSlot
                 && rightOperandRegister instanceof StackSlot) {
             instructionGenerator
@@ -445,7 +445,7 @@ public class X86Bit64CodeGenerator implements CodeGenerator {
         Register rightOperandRegister = allocationResult.nodeToRegisterMapping().get(instruction.rightSrc());
         Register targetRegister = allocationResult.nodeToRegisterMapping().get(instruction.target());
 
-        BitSize bitSize = getBitSize(instruction.target().type());
+        BitSize bitSize = getBitSize(instruction.leftSrc().type());
         if (leftOperandRegister instanceof StackSlot
                 && rightOperandRegister instanceof StackSlot) {
             instructionGenerator

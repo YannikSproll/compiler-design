@@ -33,7 +33,7 @@ public class IrPhiGenerator {
         iteratePhis(function, dominanceChildren);
         //new IrFunctionPrinter().print(function);
         removeTrivialPhis(function, dominanceChildren);
-        new IrFunctionPrinter().print(function);
+        //new IrFunctionPrinter().print(function);
 
         return function;
     }
