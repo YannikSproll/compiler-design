@@ -32,7 +32,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
         SSAConstructionResult lExpResult = operation.lhsExpression().accept(this, context);
         SSAConstructionResult rExpResult = operation.rhsExpression().accept(this, context);
 
-        SSAValue targetValue = context.generateNewSSAValue(context.currentBlock());
+        SSAValue targetValue = context.generateNewSSAValue(operation.type(), context.currentBlock());
         IrValueProducingInstruction instruction = switch (operation.operator()) {
             case ADD -> new IrAddInstruction(targetValue, lExpResult.asSSAValue(), rExpResult.asSSAValue());
             case SUBTRACT -> new IrSubInstruction(targetValue, lExpResult.asSSAValue(), rExpResult.asSSAValue());
@@ -72,7 +72,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
     @Override
     public SSAConstructionResult visit(TypedBoolLiteral literal, SsaConstructionContext context) {
         IrBoolConstantInstruction boolConstantInstruction = new IrBoolConstantInstruction(
-                context.generateNewSSAValue(context.currentBlock()),
+                context.generateNewSSAValue(literal.type(), context.currentBlock()),
                 literal.value());
         context.currentBlock().addInstruction(boolConstantInstruction);
         return SSAConstructionResult.ssaValue(boolConstantInstruction.target());
@@ -97,18 +97,20 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
 
         context.newCurrentBlock(elseBlock);
         SSAConstructionResult elseResult = conditionalExpression.elseExpression().accept(this, context);
-        generateJumpInstruction(context.currentBlock(), fBlock);
+        IrBlock elseBranchLastBlock = context.currentBlock();
+        generateJumpInstruction(elseBranchLastBlock, fBlock);
 
         context.newCurrentBlock(thenBlock);
         SSAConstructionResult thenResult = conditionalExpression.thenExpression().accept(this, context);
-        generateJumpInstruction(context.currentBlock(), fBlock);
+        IrBlock thenBranchLastBlock = context.currentBlock();
+        generateJumpInstruction(thenBranchLastBlock, fBlock);
 
         context.newCurrentBlock(fBlock);
         IrPhi phi = new IrPhi(
-                context.generateNewSSAValue(context.currentBlock()),
+                context.generateNewSSAValue(conditionalExpression.type(), context.currentBlock()),
                 List.of(
-                        new IrPhi.IrPhiItem(elseResult.asSSAValue(), elseBlock),
-                        new IrPhi.IrPhiItem(thenResult.asSSAValue(), thenBlock)
+                        new IrPhi.IrPhiItem(elseResult.asSSAValue(), elseBranchLastBlock),
+                        new IrPhi.IrPhiItem(thenResult.asSSAValue(), thenBranchLastBlock)
                 ));
         context.currentBlock().addInstruction(phi);
 
@@ -231,7 +233,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
     @Override
     public SSAConstructionResult visit(TypedIntLiteral literal, SsaConstructionContext context) {
         IrIntConstantInstruction constantInstruction = new IrIntConstantInstruction(
-                context.generateNewSSAValue(context.currentBlock()),
+                context.generateNewSSAValue(literal.type(), context.currentBlock()),
                 literal.value());
         context.currentBlock().addInstruction(constantInstruction);
 
@@ -328,7 +330,7 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
     public SSAConstructionResult visit(TypedUnaryOperation operation, SsaConstructionContext context) {
         SSAConstructionResult result = operation.expression().accept(this, context);
 
-        SSAValue targetValue = context.generateNewSSAValue(context.currentBlock());
+        SSAValue targetValue = context.generateNewSSAValue(operation.type(), context.currentBlock());
         IrValueProducingInstruction instruction = switch(operation.operator()) {
             case BITWISE_NOT -> new IrBitwiseNotInstruction(targetValue, result.asSSAValue());
             case NEGATION -> new IrNegateInstruction(targetValue, result.asSSAValue());

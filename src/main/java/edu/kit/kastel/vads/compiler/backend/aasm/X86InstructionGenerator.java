@@ -196,6 +196,7 @@ public class X86InstructionGenerator {
     }
 
     public X86InstructionGenerator generateComparisonInstruction(InstructionParameter leftRegister, InstructionParameter rightRegister, BitSize bitSize) {
+        bitSize = BitSize.BIT_8;
         generateIndentationSpace();
         builder.append(formatter.formatInstruction(X86Instruction.COMPARISON, bitSize))
                 .append(" ")

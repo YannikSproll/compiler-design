@@ -33,7 +33,7 @@ public class IrPhiGenerator {
         iteratePhis(function, dominanceChildren);
         //new IrFunctionPrinter().print(function);
         removeTrivialPhis(function, dominanceChildren);
-        //new IrFunctionPrinter().print(function);
+        new IrFunctionPrinter().print(function);
 
         return function;
     }
@@ -82,7 +82,8 @@ public class IrPhiGenerator {
         for (Symbol symbol : phiLocations.keySet()) {
             Set<IrBlock> blocksToInsertPhis = phiLocations.get(symbol);
             for (IrBlock block : blocksToInsertPhis) {
-                IrPhi phi = new IrPhi(ssaValueGenerator.generateNewSSAValue(Optional.of(symbol)), new ArrayList<>());
+
+                IrPhi phi = new IrPhi(ssaValueGenerator.generateNewSSAValue(IrType.from(symbol.type()), Optional.of(symbol)), new ArrayList<>());
                 ssaVariables.introduceNewSSAValue(phi.target(), block);
                 block.insertInstruction(0, phi);
             }
