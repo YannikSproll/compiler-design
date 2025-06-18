@@ -6,12 +6,8 @@ import edu.kit.kastel.vads.compiler.frontend.parser.visitor.Visitor;
 
 import java.util.List;
 
-public record FunctionTree(TypeTree returnType, NameTree name, List<ParameterTree> parameters, BlockTree body) implements Tree {
-    @Override
-    public Span span() {
-        return new Span.SimpleSpan(returnType().span().start(), body().span().end());
-    }
-
+public record CallTree(NameTree functionName, List<ArgumentTree> arguments, Span span)
+        implements ExpressionTree, SimpleStatementTree {
     @Override
     public <T, R> R accept(Visitor<T, R> visitor, T data) {
         return visitor.visit(this, data);

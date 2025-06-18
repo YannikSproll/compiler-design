@@ -240,6 +240,21 @@ public class Elaborator implements
     }
 
     @Override
+    public ElaborationResult visit(ParameterTree parameterTree, ElaborationContext data) {
+        return null;
+    }
+
+    @Override
+    public ElaborationResult visit(CallTree callTree, ElaborationContext data) {
+        return null;
+    }
+
+    @Override
+    public ElaborationResult visit(ArgumentTree argumentTree, ElaborationContext data) {
+        return null;
+    }
+
+    @Override
     public ElaborationResult visit(IdentExpressionTree identExpressionTree, ElaborationContext context) {
         ElaborationResult nameResult = identExpressionTree.name().accept(this, context);
 

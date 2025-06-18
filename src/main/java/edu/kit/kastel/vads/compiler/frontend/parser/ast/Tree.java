@@ -4,7 +4,7 @@ import edu.kit.kastel.vads.compiler.Span;
 import edu.kit.kastel.vads.compiler.frontend.parser.visitor.PreVisitor;
 import edu.kit.kastel.vads.compiler.frontend.parser.visitor.Visitor;
 
-public sealed interface Tree permits ExpressionTree, FunctionTree, LValueTree, NameTree, ProgramTree, StatementTree, TypeTree {
+public sealed interface Tree permits ArgumentTree, ExpressionTree, FunctionTree, LValueTree, NameTree, ParameterTree, ProgramTree, StatementTree, TypeTree {
 
     Span span();
 

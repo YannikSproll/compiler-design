@@ -35,6 +35,7 @@ public class Lexer {
             case ')' -> separator(SeparatorType.PAREN_CLOSE);
             case '{' -> separator(SeparatorType.BRACE_OPEN);
             case '}' -> separator(SeparatorType.BRACE_CLOSE);
+            case ',' -> separator(SeparatorType.COMMA);
             case ';' -> separator(SeparatorType.SEMICOLON);
             case '-' -> singleOrAssign(OperatorType.MINUS, OperatorType.ASSIGN_MINUS);
             case '+' -> singleOrAssign(OperatorType.PLUS, OperatorType.ASSIGN_PLUS);
@@ -199,7 +200,7 @@ public class Lexer {
             off++;
         }
         String id = this.source.substring(this.pos, this.pos + off);
-        // This is a naive solution. Using a better data structure (hashmap, trie) likely performs better.
+        // TODO: This is a naive solution. Using a better data structure (hashmap, trie) likely performs better.
         for (KeywordType value : KeywordType.values()) {
             if (value.keyword().equals(id)) {
                 return new Keyword(value, buildSpan(off));

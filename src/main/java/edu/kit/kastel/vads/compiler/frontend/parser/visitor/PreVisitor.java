@@ -14,6 +14,12 @@ public interface PreVisitor<T> {
 
     void preVisit(FunctionTree functionTree, T data);
 
+    void preVisit(ParameterTree parameterTree, T data);
+
+    void preVisit(CallTree callTree, T data);
+
+    void preVisit(ArgumentTree argumentTree, T data);
+
     void preVisit(IdentExpressionTree identExpressionTree, T data);
 
     void preVisit(ConditionalExpressionTree conditionalExpressionTree, T data);
