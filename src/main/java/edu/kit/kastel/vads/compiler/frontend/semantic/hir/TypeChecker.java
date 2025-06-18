@@ -4,6 +4,12 @@ import edu.kit.kastel.vads.compiler.frontend.semantic.SemanticException;
 
 public final class TypeChecker {
 
+    public void expectEqualTypes(TypedParameter parameter, TypedArgument argument) {
+        if (parameter.type() != argument.type()) {
+            throw new SemanticException("Type mismatch. Expected equal types " + parameter.type() + " but got " + argument.type());
+        }
+    }
+
     public void expectEqualTypes(TypedExpression firstExpression, TypedExpression secondExpression) {
         if (firstExpression.type() != secondExpression.type()) {
             throw new SemanticException("Type mismatch. Expected equal types, but got ...");

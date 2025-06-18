@@ -158,10 +158,19 @@ public class SsaConstruction implements TypedResultVisitor<SsaConstructionContex
 
         IrFunction irFunction = new IrFunction(startBlock, context.blocks(), function.isMainFunction());
 
-
         new IrPhiGenerator().addPhis(irFunction, context.getSSAVariables(), context.ssaValueGenerator());
 
         return SSAConstructionResult.function(irFunction);
+    }
+
+    @Override
+    public SSAConstructionResult visit(TypedFunctionCall functionCall, SsaConstructionContext ssaConstructionContext) {
+        return null;
+    }
+
+    @Override
+    public SSAConstructionResult visit(TypedArgument argument, SsaConstructionContext ssaConstructionContext) {
+        return null;
     }
 
     @Override

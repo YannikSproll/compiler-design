@@ -133,6 +133,16 @@ class VariableDefinitionAnalysis implements TypedResultVisitor<VariableDefinitio
     }
 
     @Override
+    public List<Symbol> visit(TypedFunctionCall functionCall, VariableDefinitionContext variableDefinitionContext) {
+        return List.of();
+    }
+
+    @Override
+    public List<Symbol> visit(TypedArgument argument, VariableDefinitionContext variableDefinitionContext) {
+        return List.of();
+    }
+
+    @Override
     public List<Symbol> visit(TypedIf ifStatement, VariableDefinitionContext context) {
         ifStatement.conditionExpression().accept(this, context);
 

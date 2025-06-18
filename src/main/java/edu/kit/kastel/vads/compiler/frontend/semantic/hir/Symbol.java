@@ -33,15 +33,4 @@ public final class Symbol {
     public Optional<TypedStatement> definedAt() {
         return definingStatement;
     }
-
-    public boolean isDefined() {
-        return definingStatement.isPresent();
-    }
-
-    public void markAsDefined(TypedStatement definingStatement) {
-        if (this.definingStatement.isPresent()) {
-            throw new IllegalStateException("Can not mark variable " + name + " as assigned, because it already is assigned");
-        }
-        this.definingStatement = Optional.of(definingStatement);
-    }
 }

@@ -12,6 +12,8 @@ public interface TypedVisitor<TContext> {
     void visit(TypedDeclaration declaration, TContext context);
     void visit(TypedFile file, TContext context);
     void visit(TypedFunction function, TContext context);
+    void visit(TypedFunctionCall functionCall, TContext context);
+    void visit(TypedArgument argument, TContext context);
     void visit(TypedIf ifStatement, TContext context);
     void visit(TypedIntLiteral literal, TContext context);
     void visit(TypedLoop loop, TContext context);

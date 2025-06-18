@@ -77,6 +77,16 @@ public final class TypedPostorderVisitor<TContext> implements TypedVisitor<TCont
     }
 
     @Override
+    public void visit(TypedFunctionCall functionCall, TContext tContext) {
+
+    }
+
+    @Override
+    public void visit(TypedArgument argument, TContext tContext) {
+
+    }
+
+    @Override
     public void visit(TypedIf ifStatement, TContext tContext) {
         ifStatement.conditionExpression().accept(this, tContext);
         ifStatement.thenStatement().accept(this, tContext);

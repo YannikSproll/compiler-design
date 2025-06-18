@@ -2,7 +2,7 @@ package edu.kit.kastel.vads.compiler.frontend.semantic.hir;
 
 import edu.kit.kastel.vads.compiler.Span;
 
-public sealed interface TypedExpression extends TypedObject permits TypedBinaryOperation, TypedConditionalExpression, TypedIntLiteral, TypedBoolLiteral, TypedUnaryOperation, TypedVariable {
+public sealed interface TypedExpression extends TypedObject permits TypedArgument, TypedBinaryOperation, TypedBoolLiteral, TypedConditionalExpression, TypedFunctionCall, TypedIntLiteral, TypedUnaryOperation, TypedVariable {
     HirType type();
     Span span();
 

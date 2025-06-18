@@ -22,6 +22,10 @@ public class Scope {
         this.type = type;
     }
 
+    public Optional<Scope> parent() {
+        return parent;
+    }
+
     public ScopeType type() {
         return type;
     }

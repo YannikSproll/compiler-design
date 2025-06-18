@@ -2,7 +2,7 @@ package edu.kit.kastel.vads.compiler.frontend.semantic.hir;
 
 import java.util.List;
 
-public sealed interface ElaborationResult permits ElaborationResult.BlockElaborationResult, ElaborationResult.ExpressionElaborationResult, ElaborationResult.LValueElaborationResult, ElaborationResult.NameElaborationResult, ElaborationResult.NodeElaborationResult, ElaborationResult.SingleStatementElaborationResult, ElaborationResult.StatementSequenceElaborationResult, ElaborationResult.TypeElaborationResult {
+public sealed interface ElaborationResult permits ElaborationResult.ArgumentResult, ElaborationResult.BlockElaborationResult, ElaborationResult.ExpressionElaborationResult, ElaborationResult.FunctionCallResult, ElaborationResult.LValueElaborationResult, ElaborationResult.NameElaborationResult, ElaborationResult.NodeElaborationResult, ElaborationResult.ParameterResult, ElaborationResult.SingleStatementElaborationResult, ElaborationResult.StatementSequenceElaborationResult, ElaborationResult.TypeElaborationResult {
 
     default TypedExpression expression() { throw new IllegalStateException(); }
     default TypedStatement statement() { throw new IllegalStateException(); }
@@ -13,6 +13,9 @@ public sealed interface ElaborationResult permits ElaborationResult.BlockElabora
     default TypedBlock block() { throw new IllegalStateException(); }
     default TypedLValue lvalue() { throw new IllegalStateException(); }
     default TypedStatement statementOrBlock() { throw new IllegalStateException(); }
+    default TypedParameter parameter() { throw new IllegalStateException(); }
+    default TypedArgument argument() { throw new IllegalStateException(); }
+
 
     static ElaborationResult expression(TypedExpression expression) {
         return new ExpressionElaborationResult(expression);
@@ -20,10 +23,6 @@ public sealed interface ElaborationResult permits ElaborationResult.BlockElabora
 
     static ElaborationResult statement(TypedStatement statement) {
         return new SingleStatementElaborationResult(statement);
-    }
-
-    static ElaborationResult statements(List<TypedStatement> statements) {
-        return new StatementSequenceElaborationResult(statements);
     }
 
     static ElaborationResult node(TypedNode node) {
@@ -46,6 +45,11 @@ public sealed interface ElaborationResult permits ElaborationResult.BlockElabora
         return new LValueElaborationResult(lvalue);
     }
 
+    static ElaborationResult parameter(TypedParameter parameter) { return new ParameterResult(parameter); }
+
+    static ElaborationResult argument(TypedArgument argument) { return new ArgumentResult(argument); }
+
+    static ElaborationResult functionCall(TypedFunctionCall functionCall) { return new FunctionCallResult(functionCall); }
 
 
     record ExpressionElaborationResult(TypedExpression expression) implements ElaborationResult {
@@ -122,6 +126,32 @@ public sealed interface ElaborationResult permits ElaborationResult.BlockElabora
         @Override
         public TypedLValue lvalue() {
             return lvalue;
+        }
+    }
+
+    record ParameterResult(TypedParameter parameter) implements ElaborationResult {
+        @Override
+        public TypedParameter parameter() {
+            return parameter;
+        }
+    }
+
+    record ArgumentResult(TypedArgument argument) implements ElaborationResult {
+        @Override
+        public TypedArgument argument() {
+            return argument;
+        }
+    }
+
+    record FunctionCallResult(TypedFunctionCall functionCall) implements ElaborationResult {
+        @Override
+        public TypedStatement statement() {
+            return functionCall;
+        }
+
+        @Override
+        public TypedExpression expression() {
+            return functionCall;
         }
     }
 }

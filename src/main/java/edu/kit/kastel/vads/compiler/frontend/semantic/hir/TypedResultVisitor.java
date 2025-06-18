@@ -12,6 +12,8 @@ public interface TypedResultVisitor<TContext, TResult> {
     TResult visit(TypedDeclaration declaration, TContext context);
     TResult visit(TypedFile file, TContext context);
     TResult visit(TypedFunction function, TContext context);
+    TResult visit(TypedFunctionCall functionCall, TContext context);
+    TResult visit(TypedArgument argument, TContext context);
     TResult visit(TypedIf ifStatement, TContext context);
     TResult visit(TypedIntLiteral literal, TContext context);
     TResult visit(TypedLoop loop, TContext context);

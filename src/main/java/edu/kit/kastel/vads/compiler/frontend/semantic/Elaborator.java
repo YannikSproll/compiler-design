@@ -217,41 +217,68 @@ public class Elaborator implements
         return ElaborationResult.statement(typedDeclaration);
     }
 
+
     @Override
     public ElaborationResult visit(FunctionTree functionTree, ElaborationContext context) {
-        Scope currentScope = context.symbolTable().enterScope(ScopeType.FUNCTION);
-
-        ElaborationResult returnTypeResult = functionTree.returnType().accept(this, context);
         ElaborationResult nameResult = functionTree.name().accept(this, context);
+        TypedFunction function = context.getFunction(nameResult.name());
+
+        context.symbolTable().enterScope(function.declaringScope());
+
         ElaborationResult bodyResult = functionTree.body().accept(this, context);
+        function.setElaboratedBody(bodyResult.block());
 
         context.symbolTable().exitScope();
 
-        Symbol functionSymbol = new Symbol(
-                nameResult.name(),
-                returnTypeResult.type(),
-                functionTree.span());
-        TypedFunction typedFunction = new TypedFunction(
-                functionSymbol,
-                bodyResult.block(),
-                currentScope,
-                MAIN_FUNCTION_NAME.equals(functionSymbol.name()));
-        return ElaborationResult.node(typedFunction);
+        return ElaborationResult.node(function);
     }
 
     @Override
-    public ElaborationResult visit(ParameterTree parameterTree, ElaborationContext data) {
-        return null;
+    public ElaborationResult visit(ParameterTree parameterTree, ElaborationContext context) {
+        ElaborationResult nameResult = parameterTree.name().accept(this, context);
+        ElaborationResult typeResult = parameterTree.type().accept(this, context);
+
+        Symbol parameterSymbol = new Symbol(nameResult.name(), typeResult.type(), parameterTree.span());
+        TypedParameter typedParameter = new TypedParameter(parameterSymbol, typeResult.type(), parameterTree.span());
+        return ElaborationResult.parameter(typedParameter);
     }
 
     @Override
-    public ElaborationResult visit(CallTree callTree, ElaborationContext data) {
-        return null;
+    public ElaborationResult visit(CallTree callTree, ElaborationContext context) {
+        ElaborationResult nameResult = callTree.functionName().accept(this, context);
+        TypedFunction calledFunction = context.getFunction(nameResult.name());
+
+        List<TypedArgument> arguments = new ArrayList<>();
+        for (ArgumentTree argumentTree : callTree.arguments()) {
+            ElaborationResult argumentResult = argumentTree.accept(this, context);
+            arguments.add(argumentResult.argument());
+        }
+
+        if (calledFunction.parameters().size() != arguments.size()) {
+            throw new SemanticException("Number of arguments does not match the number of parameters.");
+        }
+
+        for (int i = 0; i < arguments.size(); i++) {
+            TypedParameter parameter = calledFunction.parameters().get(i);
+            TypedArgument argument = arguments.get(i);
+            typeChecker.expectEqualTypes(parameter, argument);
+        }
+
+        // Check types of arguments
+        TypedFunctionCall functionCall = new TypedFunctionCall(
+                calledFunction,
+                arguments,
+                calledFunction.symbol().type(),
+                callTree.span());
+        return ElaborationResult.functionCall(functionCall);
     }
 
     @Override
-    public ElaborationResult visit(ArgumentTree argumentTree, ElaborationContext data) {
-        return null;
+    public ElaborationResult visit(ArgumentTree argumentTree, ElaborationContext context) {
+        ElaborationResult expressionResult = argumentTree.expression().accept(this, context);
+
+        TypedArgument typedArgument = new TypedArgument(expressionResult.expression(), argumentTree.span());
+        return ElaborationResult.argument(typedArgument);
     }
 
     @Override
@@ -385,10 +412,46 @@ public class Elaborator implements
         return ElaborationResult.expression(typedUnaryOperation);
     }
 
+    private TypedFunction createFunctionStub(FunctionTree functionTree, ElaborationContext context) {
+        ElaborationResult returnTypeResult = functionTree.returnType().accept(this, context);
+        ElaborationResult nameResult = functionTree.name().accept(this, context);
+
+        Scope functionScope = context.symbolTable().enterScope(ScopeType.FUNCTION);
+
+        List<TypedParameter> parameters = new ArrayList<>();
+        for (ParameterTree parameter : functionTree.parameters()) {
+            ElaborationResult parameterResult = parameter.accept(this, context);
+            TypedParameter typedParameter = parameterResult.parameter();
+
+            context.symbolTable().putType(typedParameter.symbol().name(), typedParameter.symbol());
+
+            parameters.add(typedParameter);
+        }
+
+        context.symbolTable().exitScope();
+
+        Symbol functionSymbol = new Symbol(
+                nameResult.name(),
+                returnTypeResult.type(),
+                functionTree.span());
+        TypedFunction typedFunction = new TypedFunction(
+                functionSymbol,
+                functionScope,
+                parameters);
+        return typedFunction;
+    }
+
     @Override
     public ElaborationResult visit(ProgramTree programTree, ElaborationContext context) {
         Scope currentScope = context.symbolTable().enterScope(ScopeType.FILE);
 
+        // Create function stubs
+        for (FunctionTree function : programTree.topLevelTrees()) {
+            TypedFunction functionStub = createFunctionStub(function, context);
+            context.defineFunction(functionStub.symbol().name(), functionStub);
+        }
+
+        // Elaborate functions
         List<TypedFunction> functions = new ArrayList<>();
         for (FunctionTree functionTree : programTree.topLevelTrees()) {
             functions.addAll(

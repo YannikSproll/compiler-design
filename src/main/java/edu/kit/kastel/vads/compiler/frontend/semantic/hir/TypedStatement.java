@@ -2,7 +2,7 @@ package edu.kit.kastel.vads.compiler.frontend.semantic.hir;
 
 import edu.kit.kastel.vads.compiler.Span;
 
-public sealed interface TypedStatement extends TypedObject permits TypedAssignment, TypedBlock, TypedBreak, TypedContinue, TypedDeclaration, TypedIf, TypedLoop, TypedReturn {
+public sealed interface TypedStatement extends TypedObject permits TypedAssignment, TypedBlock, TypedBreak, TypedContinue, TypedDeclaration, TypedFunctionCall, TypedIf, TypedLoop, TypedReturn {
     Span span();
 
     default TypedAssignment asAssignment() {
